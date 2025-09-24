@@ -6,6 +6,7 @@ import {
   Modal,
   FlatList,
   useWindowDimensions,
+  Platform,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -143,31 +144,99 @@ export default function Transactions() {
         </View>
 
         {showStartPicker && (
-          <DateTimePicker
-            value={startDate}
-            mode="date"
-            display="default"
-            onChange={(event, selectedDate) => {
-              setShowStartPicker(false);
-              if (event.type === "set" && selectedDate) {
-                setStartDate(selectedDate);
-              }
-            }}
-          />
+          Platform.OS === "android" ? (
+            <DateTimePicker
+              value={startDate}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowStartPicker(false);
+                if (event.type === "set" && selectedDate) {
+                  setStartDate(selectedDate);
+                }
+              }}
+            />
+          ) : (
+            <Modal
+              transparent={true}
+              animationType="slide"
+              visible={showStartPicker}
+              onRequestClose={() => setShowStartPicker(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "flex-end",
+                  backgroundColor: "rgba(0,0,0,0.3)",
+                }}
+              >
+                <View style={{ backgroundColor: "white", alignItems: "center" }}>
+                  <DateTimePicker
+                    value={startDate}
+                    mode="date"
+                    display="inline"
+                    onChange={(_, selectedDate) => {
+                      if (selectedDate) setStartDate(selectedDate);
+                    }}
+                  />
+                  <TouchableOpacity
+                    style={{ paddingBottom: 25, alignItems: "center" }}
+                    onPress={() => setShowStartPicker(false)}
+                  >
+                    <Text style={{ color: "#1B77BE", fontWeight: "bold" }}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          )
         )}
 
         {showEndPicker && (
-          <DateTimePicker
-            value={endDate}
-            mode="date"
-            display="default"
-            onChange={(event, selectedDate) => {
-              setShowEndPicker(false);
-              if (event.type === "set" && selectedDate) {
-                setEndDate(selectedDate);
-              }
-            }}
-          />
+          Platform.OS === "android" ? (
+            <DateTimePicker
+              value={endDate}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowEndPicker(false);
+                if (event.type === "set" && selectedDate) {
+                  setEndDate(selectedDate);
+                }
+              }}
+            />
+          ) : (
+            <Modal
+              transparent={true}
+              animationType="slide"
+              visible={showEndPicker}
+              onRequestClose={() => setShowEndPicker(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "flex-end",
+                  backgroundColor: "rgba(0,0,0,0.3)",
+                }}
+              >
+                <View style={{ backgroundColor: "white", alignItems: "center" }}>
+                  <DateTimePicker
+                    value={endDate}
+                    mode="date"
+                    display="inline"
+                    onChange={(_, selectedDate) => {
+                      if (selectedDate) setEndDate(selectedDate);
+                    }}
+                  />
+                  <TouchableOpacity
+                    style={{ paddingBottom: 25, alignItems: "center" }}
+                    onPress={() => setShowEndPicker(false)}
+                  >
+                    <Text style={{ color: "#1B77BE", fontWeight: "bold" }}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          )
         )}
 
         <SelectList
@@ -226,8 +295,8 @@ export default function Transactions() {
                     >
                       {item.transactionDescription?.includes("Closing Balance")
                         ? item.transactionDescription
-                            .replace("Closing Balance", "")
-                            .trim()
+                          .replace("Closing Balance", "")
+                          .trim()
                         : item.transactionDescription}
                     </Text>
                   </View>
@@ -239,22 +308,32 @@ export default function Transactions() {
                 >
                   {item.credit != null
                     ? item.credit.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                      })
+                      minimumFractionDigits: 2,
+                    })
                     : item.debit != null
-                    ? `(${item.debit.toLocaleString(undefined, {
+                      ? `(${item.debit.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                       })})`
-                    : ""}
+                      : ""}
                 </Text>
 
                 <Text
                   style={[styles.dataCell, styles.rightAlign, { flex: 1 }]}
                   numberOfLines={1}
                 >
-                  {item.balance.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                  })}
+                  {(() => {
+                    let newBalance = item.balance;
+
+                    if (item.credit != null) {
+                      newBalance = item.balance - item.credit;
+                    } else if (item.debit != null) {
+                      newBalance = item.balance + item.debit;
+                    }
+
+                    return newBalance.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                    });
+                  })()}
                 </Text>
               </View>
             )}
@@ -265,7 +344,7 @@ export default function Transactions() {
             }}
             contentContainerStyle={{
               flexGrow: 1,
-              paddingBottom: isScrollable ? height * 1.16 : 20,
+              paddingBottom: isScrollable ? height * 1.10 : 20,
             }}
             ListEmptyComponent={() => (
               <Text style={styles.noData}>No transactions available</Text>
