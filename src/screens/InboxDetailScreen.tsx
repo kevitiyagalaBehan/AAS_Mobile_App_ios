@@ -108,80 +108,84 @@ export default function InboxDetail() {
   }, [navigation, route.params.title]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "android" ? "padding" : undefined}
-    >
-      <FlatList
-        data={comments}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.commentList}
-        renderItem={({ item }) => {
-          const isSent = item.author === loggedInUser?.fullName;
+    <SafeAreaProvider>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={styles.container}>
+          <FlatList
+            data={comments}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.commentList}
+            renderItem={({ item }) => {
+              const isSent = item.author === loggedInUser?.fullName;
 
-          return (
-            <View
-              style={[
-                styles.comment,
-                isSent ? styles.sentComment : styles.receivedComment,
-              ]}
-            >
-              {isSent && (
-                <TouchableOpacity
-                  onPress={() =>
-                    Alert.alert(
-                      "Delete Comment",
-                      "Are you sure you want to delete this comment?",
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        {
-                          text: "Delete",
-                          onPress: () => handleDelete(item.id),
-                          style: "destructive",
-                        },
-                      ]
-                    )
-                  }
-                  style={styles.deleteIcon}
+              return (
+                <View
+                  style={[
+                    styles.comment,
+                    isSent ? styles.sentComment : styles.receivedComment,
+                  ]}
                 >
-                  <FontAwesome name="trash" size={18} color="red" />
-                </TouchableOpacity>
-              )}
+                  {isSent && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        Alert.alert(
+                          "Delete Comment",
+                          "Are you sure you want to delete this comment?",
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                              text: "Delete",
+                              onPress: () => handleDelete(item.id),
+                              style: "destructive",
+                            },
+                          ]
+                        )
+                      }
+                      style={styles.deleteIcon}
+                    >
+                      <FontAwesome name="trash" size={18} color="red" />
+                    </TouchableOpacity>
+                  )}
 
-              {!isSent && <Text style={styles.author}>{item.author}</Text>}
-              <Text style={styles.text}>{item.comment}</Text>
-              <Text style={styles.date}>
-                {new Date(item.date).toLocaleString("en-AU", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                  {!isSent && <Text style={styles.author}>{item.author}</Text>}
+                  <Text style={styles.text}>{item.comment}</Text>
+                  <Text style={styles.date}>
+                    {new Date(item.date).toLocaleString("en-AU", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                </View>
+              );
+            }}
+          />
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Write a comment..."
+              value={newComment}
+              onChangeText={setNewComment}
+            />
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleSend}
+              disabled={sending}
+            >
+              <Text style={styles.buttonText}>
+                {sending ? "Sending..." : "Send"}
               </Text>
-            </View>
-          );
-        }}
-      />
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Write a comment..."
-          value={newComment}
-          onChangeText={setNewComment}
-        />
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleSend}
-          disabled={sending}
-        >
-          <Text style={styles.buttonText}>
-            {sending ? "Sending..." : "Send"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </SafeAreaProvider>
   );
 }
 
