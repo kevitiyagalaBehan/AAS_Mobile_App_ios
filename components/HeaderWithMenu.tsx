@@ -48,15 +48,14 @@ export default function HeaderWithMenu() {
 const getStyles = (width: number, height: number) =>
   StyleSheet.create({
     headerSection: {
-      backgroundColor: "#fff",
       paddingHorizontal: width * 0.04,
-      paddingTop: height * 0.02,
-      paddingBottom: height * 0.015,
+      paddingVertical: height * 0.02,
     },
     accountNameText: {
-      fontSize: RFPercentage(2.7),
+      fontSize: Math.max(RFPercentage(2.7), 14),
       fontWeight: "bold",
       color: "#1B77BE",
-      marginBottom: height * 0.01,
+      flexShrink: 1,
     },
   });
+
