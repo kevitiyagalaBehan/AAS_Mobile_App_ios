@@ -41,7 +41,7 @@ export default function HomeScreenFamily() {
           }
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: height * 0.01,
+            paddingBottom: height * 0.02,
           }}
           showsVerticalScrollIndicator={false}
         >
@@ -76,7 +76,7 @@ const getStyles = (width: number, height: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: "#eee",
+      //backgroundColor: "#eee",
     },
     bodySection: {
       paddingHorizontal: width * 0.02,

@@ -83,7 +83,7 @@ const getStyles = (width: number, height: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      // backgroundColor: "#eee",
+      //backgroundColor: "#eee",
     },
     bodySection: {
       paddingHorizontal: width * 0.02,
