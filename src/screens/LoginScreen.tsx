@@ -7,8 +7,10 @@ import {
   Alert,
   StyleSheet,
   TouchableOpacity,
+  KeyboardAvoidingView,
   Modal,
   useWindowDimensions,
+  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { FontAwesome } from "@expo/vector-icons";
@@ -109,121 +111,126 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <Image
-          source={require("../../assets/aas_logo.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={styles.container}>
+          <Image
+            source={require("../../assets/aas_logo.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Username"
-          onChangeText={setUsername}
-          value={username}
-          autoCapitalize="none"
-          placeholderTextColor="#999"
-        />
-
-        <View style={styles.passwordContainer}>
           <TextInput
-            style={styles.passwordInput}
-            placeholder="Enter Password"
-            secureTextEntry={secureTextEntry}
-            onChangeText={setPassword}
-            value={password}
+            style={styles.input}
+            placeholder="Enter Username"
+            onChangeText={setUsername}
+            value={username}
             autoCapitalize="none"
             placeholderTextColor="#999"
           />
-          <TouchableOpacity
-            onPress={() => setSecureTextEntry(!secureTextEntry)}
-            style={styles.eyeIconContainer}
-          >
-            <FontAwesome
-              name={secureTextEntry ? "eye" : "eye-slash"}
-              size={20}
-              color="#666"
+
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Enter Password"
+              secureTextEntry={secureTextEntry}
+              onChangeText={setPassword}
+              value={password}
+              autoCapitalize="none"
+              placeholderTextColor="#999"
             />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={handleLogin}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.loginButtonText}>Login</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setModalVisible(true)}
-          activeOpacity={0.2}
-        >
-          <Text style={styles.forgotPassword}>Forgot Password?</Text>
-        </TouchableOpacity>
-
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => {
-            setModalVisible(false);
-            setEmail("");
-            setEmailError("");
-          }}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Forgot Password</Text>
-
-              <Text style={styles.modalText}>
-                Enter your email address and we'll send you a link to reset your
-                password.
-              </Text>
-
-              <TextInput
-                style={[
-                  styles.modalInput,
-                  emailError ? styles.inputError : null,
-                ]}
-                placeholder="Enter your email"
-                placeholderTextColor="#999"
-                onChangeText={handleEmailChange}
-                value={email}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoFocus={true}
+            <TouchableOpacity
+              onPress={() => setSecureTextEntry(!secureTextEntry)}
+              style={styles.eyeIconContainer}
+            >
+              <FontAwesome
+                name={secureTextEntry ? "eye" : "eye-slash"}
+                size={20}
+                color="#666"
               />
+            </TouchableOpacity>
+          </View>
 
-              {emailError ? (
-                <Text style={styles.errorText}>{emailError}</Text>
-              ) : null}
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={handleLogin}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.loginButtonText}>Login</Text>
+          </TouchableOpacity>
 
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={[styles.button, styles.closeButton]}
-                  onPress={() => {
-                    setModalVisible(false);
-                    setEmail("");
-                    setEmailError("");
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.buttonText}>Cancel</Text>
-                </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setModalVisible(true)}
+            activeOpacity={0.2}
+          >
+            <Text style={styles.forgotPassword}>Forgot Password?</Text>
+          </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.button, styles.submitButton]}
-                  onPress={handleForgotPasswordSubmit}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.buttonText}>Send</Text>
-                </TouchableOpacity>
+          <Modal
+            animationType="fade"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => {
+              setModalVisible(false);
+              setEmail("");
+              setEmailError("");
+            }}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Forgot Password</Text>
+
+                <Text style={styles.modalText}>
+                  Enter your email address and we'll send you a link to reset your
+                  password.
+                </Text>
+
+                <TextInput
+                  style={[
+                    styles.modalInput,
+                    emailError ? styles.inputError : null,
+                  ]}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#999"
+                  onChangeText={handleEmailChange}
+                  value={email}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoFocus={true}
+                />
+
+                {emailError ? (
+                  <Text style={styles.errorText}>{emailError}</Text>
+                ) : null}
+
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={[styles.button, styles.closeButton]}
+                    onPress={() => {
+                      setModalVisible(false);
+                      setEmail("");
+                      setEmailError("");
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.button, styles.submitButton]}
+                    onPress={handleForgotPasswordSubmit}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.buttonText}>Send</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        </Modal>
-      </SafeAreaView>
+          </Modal>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </SafeAreaProvider>
   );
 }
