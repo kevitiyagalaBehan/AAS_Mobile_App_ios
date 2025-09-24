@@ -10,7 +10,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@expo/metro-runtime": "~5.0.4",
+    "@expo/metro-runtime": "~5.0.5",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/datetimepicker": "8.4.1",
     "@react-navigation/bottom-tabs": "^7.3.3",
@@ -21,9 +21,10 @@
     "base-64": "^1.0.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.5.0",
-    "expo": "53.0.18",
+    "expo": "~53.0.23",
     "expo-application": "~6.1.5",
     "expo-asset": "~11.1.7",
+    "expo-checkbox": "~4.1.4",
     "expo-dev-client": "~5.2.4",
     "expo-linear-gradient": "~14.1.5",
     "expo-screen-orientation": "~8.1.7",
@@ -46,8 +47,7 @@
     "react-native-select-dropdown": "^4.0.1",
     "react-native-svg": "15.11.2",
     "react-native-vector-icons": "^10.2.0",
-    "react-native-web": "^0.20.0",
-    "expo-checkbox": "~4.1.4"
+    "react-native-web": "^0.20.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
