@@ -19,7 +19,7 @@ export const useVersionCheck = () => {
     const check = async () => {
       try {
         const response = await fetch(
-          "https://raw.githubusercontent.com/kevitiyagalaBehan/AAS_Mobile_App/refs/heads/main/version.json"
+          "https://raw.githubusercontent.com/kevitiyagalaBehan/AAS_Mobile_App_ios/refs/heads/main/version.json"
         );
         const data = await response.json();
 
