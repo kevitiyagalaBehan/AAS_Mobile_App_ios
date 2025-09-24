@@ -1,4 +1,4 @@
-import { StatusBar } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -23,27 +23,18 @@ function AppNavigator() {
 
   return (
     <>
-    <UpdateModal visible={forceBlock} updateUrl={updateUrl} />
+      <UpdateModal visible={forceBlock} updateUrl={updateUrl} />
+      <StatusBar style="dark" />
       <NavigationContainer>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      <Stack.Navigator initialRouteName={getInitialScreen()}>
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Other"
-          component={DrawerNavigatorOther}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Family"
-          component={DrawerNavigatorFamily}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+        <Stack.Navigator
+          initialRouteName={getInitialScreen()}
+          screenOptions={{ headerShown: false }}
+        >
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Other" component={DrawerNavigatorOther} />
+          <Stack.Screen name="Family" component={DrawerNavigatorFamily} />
+        </Stack.Navigator>
+      </NavigationContainer>
     </>
   );
 }
