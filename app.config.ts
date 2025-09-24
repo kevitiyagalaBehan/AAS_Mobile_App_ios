@@ -7,7 +7,7 @@ export default {
     owner: "aas_mobile",
     version: "1.0.0",
     orientation: "default",
-    icon: "./assets/icon.png",
+    icon: "./assets/ios-light.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     ios: {
@@ -16,17 +16,6 @@ export default {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       }
-    },
-    android: {
-      adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff",
-      },
-      statusBar: {
-        backgroundColor: "#ffffff",
-        barStyle: "dark-content",
-      },
-      package: "com.aas_mobile.AAS",
     },
     web: {
       favicon: "./assets/adaptive-icon.png",
