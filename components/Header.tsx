@@ -146,16 +146,16 @@ export default function Header() {
 const getStyles = (width: number, height: number) =>
   StyleSheet.create({
     headerSection: {
-      backgroundColor: "#fff",
+      //backgroundColor: "#fff",
       paddingHorizontal: width * 0.04,
-      paddingTop: height * 0.023,
-      paddingBottom: height * 0.015,
+      //paddingTop: height * 0.023,
+      //paddingBottom: height * 0.015,
     },
     accountNameText: {
       fontSize: RFPercentage(2.7),
       fontWeight: "bold",
       color: "#1B77BE",
-      marginBottom: 10,
+      //marginBottom: 10,
     },
     dropDownBox: {
       //backgroundColor: "#eee",
