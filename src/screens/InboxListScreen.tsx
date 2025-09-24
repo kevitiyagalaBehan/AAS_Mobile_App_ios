@@ -28,10 +28,10 @@ const getStyles = (width: number, height: number) =>
       flex: 1,
     },
     header: {
-      height: height * 0.08,
+      //height: height * 0.08,
       justifyContent: "center",
       paddingHorizontal: width * 0.04,
-      backgroundColor: "#fff",
+      //backgroundColor: "#fff",
     },
     headerText: {
       fontSize: RFPercentage(2.6),
