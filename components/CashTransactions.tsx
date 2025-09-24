@@ -367,7 +367,7 @@ export default function Transactions() {
                     {selectedItem.holdingDescription}
                   </Text>
                   <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Date:</Text>
+                    <Text style={styles.modalLabel}>Date: </Text>
                     <Text style={styles.modalText}>
                       {new Date(
                         selectedItem.transactionDate

@@ -78,7 +78,7 @@ export default function InvestmentBreakdown({ refreshTrigger }: Props) {
         <Text style={styles.bodyText}>Portfolio</Text>
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
-            <Text style={[styles.cell, styles.headerText, { flex: 1 }]}>
+            <Text style={[styles.cell, styles.headerText, { flex: 2 }]}>
               Code
             </Text>
             <Text style={[styles.cell, styles.headerText, styles.rightAlign]}>
@@ -349,6 +349,7 @@ const getStyles = (width: number, height: number) =>
       backgroundColor: "#1B77BE",
     },
     headerText: {
+      flex: 1,
       color: "#fff",
       fontWeight: "bold",
       fontSize: RFPercentage(1.8),
