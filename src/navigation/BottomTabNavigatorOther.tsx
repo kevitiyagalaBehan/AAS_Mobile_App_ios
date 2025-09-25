@@ -22,7 +22,7 @@ export default function BottomTabOther() {
     <Tab.Navigator
       initialRouteName="HomeOther"
       screenOptions={{
-        tabBarStyle: { height: height * 0.085, paddingTop: height * 0.005 },
+        tabBarStyle: { height: height * 0.09, paddingTop: height * 0.005 },
         tabBarLabelStyle: { fontSize: RFPercentage(1.4), fontWeight: "bold" },
       }}
     >
@@ -49,7 +49,7 @@ export default function BottomTabOther() {
             tabBarStyle:
               routeName === "InboxDetail"
                 ? { display: "none" }
-                : { height: height * 0.08 },
+                : { height: height * 0.09, paddingTop: height * 0.005 },
             tabBarLabelStyle: {
               fontSize: RFPercentage(1.4),
               fontWeight: "bold",
