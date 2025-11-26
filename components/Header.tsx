@@ -146,8 +146,10 @@ export default function Header() {
 const getStyles = (width: number, height: number) =>
   StyleSheet.create({
     headerSection: {
-      //backgroundColor: "#fff",
+      backgroundColor: "#fff",
       paddingHorizontal: width * 0.04,
+      height: height * 0.1,
+      justifyContent: "center",
       //paddingTop: height * 0.023,
       //paddingBottom: height * 0.015,
     },
