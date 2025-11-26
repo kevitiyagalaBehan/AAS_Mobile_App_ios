@@ -2,6 +2,12 @@ import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { ReactNode } from "react";
 
+export type PendingNavigation = {
+  userType: "Family" | "Other";
+  screen: string;
+  params: any;
+} | null;
+
 export type AuthContextType = {
   userData: LoginResponse | null;
   setUserData: React.Dispatch<React.SetStateAction<LoginResponse | null>>;
@@ -13,6 +19,8 @@ export type AuthContextType = {
   setEntityAccounts: React.Dispatch<React.SetStateAction<AccountEntity[]>>;
   loggedInUser: LinkedUsers | null;
   setLoggedInUser: (user: LinkedUsers | null) => void;
+  pendingNavigation: PendingNavigation;
+  setPendingNavigation: (nav: PendingNavigation) => void;
 
   resetAuthState: () => void;
 };
@@ -24,8 +32,8 @@ export type AuthProviderProps = {
 // Root Stack Navigation
 export type RootStackParamList = {
   Login: undefined;
-  Other: undefined;
-  Family: undefined;
+  Other: { screen?: string; params?: object };
+  Family: { screen?: string; params?: object };
   SignUp: undefined;
 };
 
@@ -79,6 +87,11 @@ export type InboxRouteProp<T extends keyof InboxStackParamList> = RouteProp<
   InboxStackParamList,
   T
 >;
+
+export type InboxNotificationActionData = {
+  Subject: string;
+  MessageId: string;
+};
 
 export type SubScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
