@@ -60,7 +60,7 @@ export const signUpUser = async (
       message: data.message || "Sign up failed",
     };
   } catch (error: any) {
-      console.error("Sign up failed:", error);
+    console.error("Sign up failed:", error);
     return {
       success: false,
       message: error.message || "Something went wrong",
@@ -173,6 +173,31 @@ export const getLinkedUsers = async (
   } catch (error) {
     console.error("Error fetching linked users:", error);
     return null;
+  }
+};
+
+export const savePushToken = async (
+  pushToken: string,
+  authToken: string
+): Promise<boolean> => {
+  try {
+    const response = await fetch(`${apiBaseUrl}/Auth/mobile/refresh_expo_token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        expoToken: pushToken,
+      }),
+    });
+
+    const data = await response.json();
+    //console.log("Response JSON:", data);
+    return data.success === true;
+  } catch (error) {
+    console.error("Failed to save push token:", error);
+    return false;
   }
 };
 
