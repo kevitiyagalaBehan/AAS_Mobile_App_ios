@@ -20,7 +20,7 @@ import {
   requestPasswordReset,
   getLinkedUsers,
 } from "../utils/pimsApi";
-import { NavigationProps } from "../navigation/types";
+import { LoginScreenNavigationProp } from "../navigation/types";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { RFPercentage } from "react-native-responsive-fontsize";
 
@@ -33,7 +33,7 @@ export default function LoginScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
-  const navigation = useNavigation<NavigationProps>();
+  const navigation = useNavigation<LoginScreenNavigationProp>();
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -168,6 +168,14 @@ export default function LoginScreen() {
             <Text style={styles.forgotPassword}>Forgot Password?</Text>
           </TouchableOpacity>
 
+          <View style={styles.signUpContainer}>
+            <Text style={styles.signUpText}>Don't have an account?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+              <Text style={styles.forgotPassword}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
+
+
           <Modal
             animationType="fade"
             transparent={true}
@@ -183,8 +191,7 @@ export default function LoginScreen() {
                 <Text style={styles.modalTitle}>Forgot Password</Text>
 
                 <Text style={styles.modalText}>
-                  Enter your email address and we'll send you a link to reset your
-                  password.
+                  Enter your email address and we'll send you a link to reset your password.
                 </Text>
 
                 <TextInput
@@ -295,6 +302,15 @@ const getStyles = (width: number, height: number) =>
       color: "#1B77BE",
       fontSize: RFPercentage(2),
       textDecorationLine: "underline",
+    },
+    signUpText: {
+      fontSize: RFPercentage(2),
+      marginRight: 5,
+    },
+    signUpContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 10,
     },
     modalContainer: {
       flex: 1,
