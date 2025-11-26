@@ -15,6 +15,9 @@ export default {
       bundleIdentifier: "com.aasmobile.AAS",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+      },
+      entitlements: {
+        "aps-environment": "development"
       }
     },
     web: {
@@ -31,6 +34,13 @@ export default {
           resizeMode: "contain",
         },
       ],
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/notification.png",
+          color: "#ffffff"
+        }
+      ]
     ],
     extra: {
       apiBaseUrl: process.env.API_BASE_URL,
