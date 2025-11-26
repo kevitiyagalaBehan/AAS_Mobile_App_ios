@@ -1,4 +1,5 @@
 import {
+  SignUpResponse,
   LoginResponse,
   LinkedUsers,
   SuperFundDetails,
@@ -36,6 +37,36 @@ const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl as string;
 //console.log("API:", apiBaseUrl);
 //console.log("ENV:", appEnv);
 //console.log("PROJECT_ID:", projectId);
+
+export const signUpUser = async (
+  firstName: string,
+  lastName: string,
+  email: string,
+  password: string
+): Promise<SignUpResponse> => {
+  try {
+    const response = await fetch(`${apiBaseUrl}/Auth/DEMOUserRegister`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ firstName, lastName, email, password }),
+    });
+
+    const data = await response.json();
+
+    return {
+      success: data.success,
+      message: data.message || "Sign up failed",
+    };
+  } catch (error: any) {
+      console.error("Sign up failed:", error);
+    return {
+      success: false,
+      message: error.message || "Something went wrong",
+    };
+  }
+};
 
 export const loginUser = async (
   username: string,
