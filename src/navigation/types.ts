@@ -26,7 +26,18 @@ export type RootStackParamList = {
   Login: undefined;
   Other: undefined;
   Family: undefined;
+  SignUp: undefined;
 };
+
+export type LoginScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "Login"
+>;
+
+export type SignUpScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "SignUp"
+>;
 
 // Bottom Tab Navigation
 export type BottomTabParamListOther = {
@@ -96,6 +107,11 @@ export interface LinkedUsers {
   role?: string;
   userId?: string;
 }
+
+export type SignUpResponse = {
+  success: boolean;
+  message: string;
+};
 
 export interface LoginResponse {
   authToken: string;
