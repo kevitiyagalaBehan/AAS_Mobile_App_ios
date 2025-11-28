@@ -39,6 +39,7 @@ export async function registerForPushNotificationsAsync(): Promise<ExpoPushToken
         projectId: Constants.expoConfig?.extra?.eas?.projectId,
       })
     ).data;
+    //console.log("Expo Push Token:", token);
 
     return token;
 
