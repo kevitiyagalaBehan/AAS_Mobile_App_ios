@@ -20,31 +20,25 @@ function handleRegistrationError(errorMessage: string) {
 }
 
 export async function registerForPushNotificationsAsync(): Promise<ExpoPushToken> {
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
 
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
 
-    if (finalStatus !== "granted") {
-      handleRegistrationError("Push notifications permission not granted.");
-      return null;
-    }
-
-    const token = (
-      await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
-      })
-    ).data;
-    //console.log("Expo Push Token:", token);
-
-    return token;
-
-  } else {
-    handleRegistrationError('Must use physical device for push notifications');
+  if (finalStatus !== "granted") {
+    handleRegistrationError("Push notifications permission not granted.");
     return null;
   }
+
+  const token = (
+    await Notifications.getExpoPushTokenAsync({
+      projectId: Constants.expoConfig?.extra?.eas?.projectId,
+    })
+  ).data;
+  //console.log("Expo Push Token:", token);
+
+  return token;
 }
