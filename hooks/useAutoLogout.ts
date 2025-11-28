@@ -5,7 +5,7 @@ import { handleLogout } from "../src/utils/logout";
 import { useAuth } from "../src/context/AuthContext";
 import { RootStackParamList } from "../src/navigation/types";
 
-const AUTO_LOGOUT_DELAY = 4 * 60 * 1000;
+const AUTO_LOGOUT_DELAY = 2 * 60 * 60 * 1000;
 
 export const useAutoLogout = () => {
   const appState = useRef(AppState.currentState);
