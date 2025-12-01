@@ -1,7 +1,5 @@
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
-import * as Device from 'expo-device';
-import { Platform } from "react-native";
 
 export type ExpoPushToken = string | null;
 
@@ -14,11 +12,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-function handleRegistrationError(errorMessage: string) {
-  alert(errorMessage);
-  throw new Error(errorMessage);
-}
-
 export async function registerForPushNotificationsAsync(): Promise<ExpoPushToken> {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -29,7 +22,6 @@ export async function registerForPushNotificationsAsync(): Promise<ExpoPushToken
   }
 
   if (finalStatus !== "granted") {
-    handleRegistrationError("Push notifications permission not granted.");
     return null;
   }
 
