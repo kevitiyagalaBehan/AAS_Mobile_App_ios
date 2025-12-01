@@ -21,7 +21,7 @@ import {
   getLinkedUsers,
   savePushToken,
 } from "../utils/pimsApi";
-import { LoginScreenNavigationProp, NavigationProps } from "../navigation/types";
+import { NavigationProps } from "../navigation/types";
 import { registerForPushNotificationsAsync } from "../utils/notification";
 import { navigationRef } from "../navigation/RootNavigation";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
