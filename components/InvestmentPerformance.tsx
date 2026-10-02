@@ -7,12 +7,32 @@ import { getInvestmentPerformance } from "../src/utils/pimsApi";
 import { InvestmentPerformanceDetails, Props } from "../src/navigation/types";
 import { useWindowSize } from "../hooks/useWindowSize";
 
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+const MAX_X_LABELS = 5;
+
+const formatShortDate = (date: Date) =>
+  `${MONTHS[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`;
+
+const formatFullDate = (date: Date) =>
+  `${String(date.getDate()).padStart(2, "0")} ${
+    MONTHS[date.getMonth()]
+  } ${date.getFullYear()}`;
+
 export default function InvestmentPerformance({ refreshTrigger }: Props) {
   const { userData } = useAuth();
   const { width, height, isPortrait } = useWindowSize();
   const [data, setData] = useState<InvestmentPerformanceDetails[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  // Default to the latest point whenever data loads or refreshes
+  useEffect(() => {
+    setSelectedIndex(data && data.length > 0 ? data.length - 1 : null);
+  }, [data]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,43 +72,43 @@ export default function InvestmentPerformance({ refreshTrigger }: Props) {
     return <Text style={styles.errorText}>No investment data available</Text>;
   }
 
-  const labels = data.map((item) => {
-    const date = new Date(item.date);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = String(date.getFullYear()).slice(2);
-    return `${day}-${month}-${year}`;
-  });
-
   const values = data.map((item) => item.cumulativePercent);
 
-  const parsedDates = data
-    .map((item, index) => ({ date: new Date(item.date), index }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+  // Show a few evenly spaced short labels so they fit without rotating
+  const labelStep = Math.max(1, Math.ceil(data.length / MAX_X_LABELS));
+  const labels = data.map((item, index) =>
+    index % labelStep === 0 ? formatShortDate(new Date(item.date)) : ""
+  );
 
-  const reducedLabels = new Array(labels.length).fill("");
-
-  if (parsedDates.length > 0) {
-    const firstDate = parsedDates[0].date;
-    let nextLabelDate = new Date(firstDate);
-
-    parsedDates.forEach(({ date, index }) => {
-      if (date >= nextLabelDate) {
-        reducedLabels[index] = labels[index];
-        nextLabelDate = new Date(date);
-        nextLabelDate.setMonth(nextLabelDate.getMonth() + 2);
-      }
-    });
-  }
+  const selected = selectedIndex !== null ? data[selectedIndex] : null;
 
   return (
     <View style={styles.container}>
       <View style={styles.border}>
         <Text style={styles.bodyText}>Investment Performance</Text>
+        {selected && (
+          <View style={styles.selectedInfo}>
+            <Text style={styles.selectedDate}>
+              {formatFullDate(new Date(selected.date))}
+            </Text>
+            <Text
+              style={[
+                styles.selectedValue,
+                {
+                  color:
+                    selected.cumulativePercent < 0 ? "#C0392B" : "#1E8449",
+                },
+              ]}
+            >
+              {selected.cumulativePercent > 0 ? "+" : ""}
+              {selected.cumulativePercent.toFixed(2)}%
+            </Text>
+          </View>
+        )}
         <View style={{ alignItems: "center", paddingBottom: height * 0.01 }}>
           <LineChart
             data={{
-              labels: reducedLabels,
+              labels,
               datasets: [
                 {
                   data: values,
@@ -100,7 +120,15 @@ export default function InvestmentPerformance({ refreshTrigger }: Props) {
             width={width * 0.9}
             height={isPortrait ? height * 0.4 : height * 0.9}
             yAxisInterval={1}
-            withDots={false}
+            yAxisSuffix="%"
+            withDots
+            // Every point gets an invisible tap target; only the selected one is drawn
+            getDotProps={(_, index) =>
+              index === selectedIndex
+                ? { r: "5", fill: "#1B77BE", stroke: "#fff", strokeWidth: 2 }
+                : { r: "8", fill: "transparent" }
+            }
+            onDataPointClick={({ index }) => setSelectedIndex(index)}
             withShadow={false}
             fromZero
             withInnerLines={true}
@@ -121,11 +149,8 @@ export default function InvestmentPerformance({ refreshTrigger }: Props) {
               },
               propsForLabels: {
                 fontSize: RFPercentage(1.5),
-                rotation: 45,
-                textAnchor: "start",
               },
             }}
-            bezier
           />
         </View>
       </View>
@@ -159,6 +184,20 @@ const getStyles = (width: number, height: number) =>
       color: "#1B77BE",
       marginBottom: height * 0.005,
       fontSize: RFPercentage(2.6),
+    },
+    selectedInfo: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      marginBottom: height * 0.01,
+    },
+    selectedDate: {
+      fontSize: RFPercentage(1.8),
+      color: "#666",
+    },
+    selectedValue: {
+      fontSize: RFPercentage(2.4),
+      fontWeight: "bold",
     },
     loadingContainer: {
       flex: 1,

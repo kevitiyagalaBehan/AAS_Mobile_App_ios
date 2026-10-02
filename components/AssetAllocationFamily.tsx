@@ -1,7 +1,14 @@
-import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  useWindowDimensions,
+} from "react-native";
 import React, { useState, useEffect } from "react";
-import { PieChart } from "react-native-chart-kit";
+import DonutChart from "./DonutChart";
 import { RFPercentage } from "react-native-responsive-fontsize";
+import { getColorForAssetClass } from "../src/utils/assetColors";
 import { ChartData, PortfolioData } from "../src/navigation/types";
 
 export default function AssetAllocationFamily({
@@ -15,6 +22,7 @@ export default function AssetAllocationFamily({
 }) {
   const { width, height } = useWindowDimensions();
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -32,18 +40,9 @@ export default function AssetAllocationFamily({
       })
     );
     setChartData(processed);
+    const firstIndex = processed.findIndex((item) => item.percentage > 0);
+    setSelectedIndex(firstIndex >= 0 ? firstIndex : null);
   }, [data]);
-
-  const getColorForAssetClass = (assetClass: string) => {
-    const colorMap: { [key: string]: string } = {
-      Cash: "#5DA8A7",
-      "Aust. Equities": "#7AC2E1",
-      "Int. Equities": "#677EB5",
-      Property: "#A46E7E",
-      Other: "#EDBE72",
-    };
-    return colorMap[assetClass] || "#999";
-  };
 
   const styles = getStyles(width, height);
 
@@ -67,32 +66,38 @@ export default function AssetAllocationFamily({
         <Text style={styles.bodyText}>Asset Allocation</Text>
         {chartData.length > 0 ? (
           <View style={styles.chartContainer}>
-            <PieChart
-              data={chartData}
-              width={width * 1.0}
-              height={Math.min(height * 0.3, 220)}
-              chartConfig={{
-                backgroundColor: "#ffffff",
-                backgroundGradientFrom: "#ffffff",
-                backgroundGradientTo: "#ffffff",
-                color: (opacity = 1) => `rgba(0, 31, 91, ${opacity})`,
-              }}
-              accessor="percentage"
-              backgroundColor="transparent"
-              paddingLeft={`${width * 0.25}`}
-              absolute
-              hasLegend={false}
-            />
+            <View style={styles.donutWrapper}>
+              <DonutChart
+                data={chartData}
+                size={Math.min(width * 0.36, 150)}
+                selectedIndex={selectedIndex}
+                onSelect={setSelectedIndex}
+              />
+            </View>
             <View style={styles.legendContainer}>
               {chartData.map((item, index) => (
-                <View key={index} style={styles.legendItem}>
+                <Pressable
+                  key={index}
+                  style={[
+                    styles.legendItem,
+                    selectedIndex === index && styles.legendItemSelected,
+                  ]}
+                  onPress={() =>
+                    setSelectedIndex(selectedIndex === index ? null : index)
+                  }
+                >
                   <View
                     style={[styles.colorBox, { backgroundColor: item.color }]}
                   />
-                  <Text style={styles.legendText}>
+                  <Text
+                    style={[
+                      styles.legendText,
+                      selectedIndex === index && styles.legendTextSelected,
+                    ]}
+                  >
                     {item.name}: {item.percentage.toFixed(2)}%
                   </Text>
-                </View>
+                </Pressable>
               ))}
             </View>
           </View>
@@ -147,19 +152,29 @@ const getStyles = (width: number, height: number) =>
       color: "#666",
     },
     chartContainer: {
+      flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
+      marginVertical: height * 0.02,
+    },
+    donutWrapper: {
+      marginRight: width * 0.04,
     },
     legendContainer: {
-      marginBottom: height * 0.01,
-      //flexDirection: "row",
-      //flexWrap: "wrap",
-      //justifyContent: "center",
-      alignItems: "flex-start",
+      flexShrink: 1,
     },
     legendItem: {
       flexDirection: "row",
       alignItems: "center",
-      width: "50%",
+      paddingVertical: 4,
+      paddingHorizontal: 6,
+      borderRadius: 4,
+    },
+    legendItemSelected: {
+      backgroundColor: "#EAF3FA",
+    },
+    legendTextSelected: {
+      fontWeight: "bold",
     },
     colorBox: {
       width: 12,
