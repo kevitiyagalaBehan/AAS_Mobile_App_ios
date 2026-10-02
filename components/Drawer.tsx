@@ -2,7 +2,7 @@ import { StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-n
 import React from "react";
 import { DrawerActions } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function Drawer() {
   const navigation = useNavigation();

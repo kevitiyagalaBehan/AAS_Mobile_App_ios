@@ -20,7 +20,7 @@ import {
 } from "../src/utils/pimsApi";
 import { Documents, Folders } from "../src/navigation/types";
 import { Base64 } from "js-base64";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRefreshTrigger } from "../hooks/useRefreshTrigger";
 
 export default function Document() {
