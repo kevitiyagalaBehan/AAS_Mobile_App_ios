@@ -9,7 +9,7 @@ export default {
     orientation: "default",
     icon: "./assets/ios-light.png",
     userInterfaceStyle: "light",
-    newArchEnabled: false,
+    newArchEnabled: true,
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.aasmobile.AAS",
