@@ -32,6 +32,8 @@ export type AuthProviderProps = {
 // Root Stack Navigation
 export type RootStackParamList = {
   Login: undefined;
+  PinLogin: undefined;
+  PinSetup: { mode: "afterLogin" | "settings" };
   Other: { screen?: string; params?: object };
   Family: { screen?: string; params?: object };
   SignUp: undefined;
@@ -131,6 +133,16 @@ export interface LoginResponse {
   accountId: string;
   accountType: string;
 }
+
+export type RegisterPinResult =
+  | { success: true; deviceToken: string }
+  | { success: false; message: string };
+
+export type PinLoginResult =
+  | { status: "success"; login: LoginResponse; newDeviceToken: string | null }
+  | { status: "invalid"; message: string }
+  | { status: "disabled"; message: string }
+  | { status: "error"; message: string };
 
 export interface AssetAllocationSummary {
   assetCategory: string;

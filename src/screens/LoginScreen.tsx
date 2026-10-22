@@ -14,22 +14,14 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { FontAwesome } from "@expo/vector-icons";
-import { useAuth } from "../context/AuthContext";
-import {
-  loginUser,
-  requestPasswordReset,
-  getLinkedUsers,
-  savePushToken,
-} from "../utils/pimsApi";
-import { NavigationProps } from "../navigation/types";
-import { registerForPushNotificationsAsync } from "../utils/notification";
-import { navigationRef } from "../navigation/RootNavigation";
+import { loginUser, requestPasswordReset } from "../utils/pimsApi";
+import { LoginScreenNavigationProp } from "../navigation/types";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { RFPercentage } from "react-native-responsive-fontsize";
+import { useSession } from "../../hooks/useSession";
 
 export default function LoginScreen() {
-  const { setUserData, setLoggedInUser, pendingNavigation,
-    setPendingNavigation, } = useAuth();
+  const { startSession } = useSession();
   const { width, height } = useWindowDimensions();
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -37,7 +29,7 @@ export default function LoginScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
-  const navigation = useNavigation<NavigationProps>();
+  const navigation = useNavigation<LoginScreenNavigationProp>();
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,48 +42,11 @@ export default function LoginScreen() {
 
       if (!response) throw new Error("Invalid login credentials");
 
-      const { authToken, accountId, accountType } = response;
+      await startSession(response);
 
-      setUserData({ authToken, accountId, accountType });
-
-      const linkedUser = await getLinkedUsers(authToken);
-      if (linkedUser) {
-        setLoggedInUser(linkedUser);
-      } else {
-        console.warn("No linked user found!");
-      }
-
-      const expoPushToken = await registerForPushNotificationsAsync();
-
-      if (expoPushToken) {
-        await savePushToken(expoPushToken, authToken);
-      } else {
-        console.warn("Failed to retrieve Expo push token");
-      }
-
-      const userType = accountType === "Family Group" ? "Family" : "Other";
-
-      if (pendingNavigation) {
-        navigation.replace(userType);
-
-        setTimeout(() => {
-          navigationRef.navigate(userType, {
-            screen: "MainTabs",
-            params: {
-              screen: "Inbox",
-              params: {
-                screen: pendingNavigation.screen,
-                params: pendingNavigation.params,
-              },
-            },
-          });
-        }, 300);
-
-        setPendingNavigation(null);
-
-        return;
-      }
-      navigation.replace(userType);
+      // Users who already have a PIN only reach this screen if they forgot it or are a
+      // different person on a shared device, so offer (re)setup every time.
+      navigation.replace("PinSetup", { mode: "afterLogin" });
     } catch (error: any) {
       Alert.alert("Login Error", error.message);
     }

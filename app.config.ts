@@ -40,7 +40,9 @@ export default {
           icon: "./assets/notification.png",
           color: "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-font"
     ],
     extra: {
       apiBaseUrl: process.env.API_BASE_URL,
