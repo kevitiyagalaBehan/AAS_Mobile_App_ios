@@ -17,7 +17,11 @@ import { RFPercentage } from "react-native-responsive-fontsize";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAuth } from "../context/AuthContext";
 import { handleLogout } from "../utils/logout";
-import { getLinkedUsers, revokePin } from "../utils/pimsApi";
+import {
+  getLinkedUsers,
+  requestPasswordReset,
+  revokePin,
+} from "../utils/pimsApi";
 import {
   clearPinRegistration,
   getPinRegistration,
@@ -31,6 +35,7 @@ export default function CustomDrawerContent(props: any) {
   const { navigation } = props;
   const drawerStatus = useDrawerStatus();
   const [hasPin, setHasPin] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const styles = getStyles(width, height);
 
@@ -39,11 +44,13 @@ export default function CustomDrawerContent(props: any) {
       try {
         if (!userData?.authToken) {
           setCurrentUserName(null);
+          setUserEmail(null);
           return;
         }
 
         const userName = await getLinkedUsers(userData.authToken);
         setCurrentUserName(userName?.fullName || "User");
+        setUserEmail(userName?.emailAddress || null);
       } catch (error) {
         console.error("Failed to fetch user data:", error);
         setCurrentUserName("Error loading user");
@@ -65,11 +72,29 @@ export default function CustomDrawerContent(props: any) {
     navigationRef.navigate("PinSetup", { mode: "settings" });
   };
 
+  // Only forget the PIN on this phone once the server confirms it's revoked; otherwise the
+  // server keeps the registration and blocks the next user from setting up a PIN here.
   const turnOffPin = async () => {
     const registration = await getPinRegistration();
-    if (registration && userData?.authToken) {
-      await revokePin(userData.authToken, registration.deviceId);
+    if (!registration) {
+      setHasPin(false);
+      return;
     }
+
+    if (!userData?.authToken) {
+      Alert.alert(
+        "Session expired",
+        "Please log in again, then turn off PIN login."
+      );
+      return;
+    }
+
+    const result = await revokePin(userData.authToken, registration.deviceId);
+    if (!result.success) {
+      Alert.alert("PIN login is still on", result.message);
+      return;
+    }
+
     await clearPinRegistration();
     setHasPin(false);
     Alert.alert(
@@ -89,6 +114,38 @@ export default function CustomDrawerContent(props: any) {
       { text: "Turn Off", style: "destructive", onPress: turnOffPin },
       { text: "Cancel", style: "cancel" },
     ]);
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    try {
+      const result = await requestPasswordReset(email);
+      if (!result) throw new Error("Unexpected Error");
+      Alert.alert(result.success ? "Success" : "Error", result.message);
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error.message || "Something went wrong. Please try again."
+      );
+    }
+  };
+
+  const handleResetPasswordPress = () => {
+    if (!userEmail) {
+      Alert.alert(
+        "Reset Password",
+        "We couldn't find the email address for your account. Please log out and use \"Forgot Password?\" on the login screen."
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Reset Password",
+      `We'll send a password reset link to ${userEmail}.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Send", onPress: () => sendPasswordReset(userEmail) },
+      ]
+    );
   };
 
   return (
@@ -111,6 +168,14 @@ export default function CustomDrawerContent(props: any) {
         <Text style={styles.pinText}>
           {hasPin ? "PIN Login" : "Set Up PIN Login"}
         </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.pinButton}
+        onPress={handleResetPasswordPress}
+      >
+        <Ionicons name="lock-closed" size={26} color="#00205A" />
+        <Text style={styles.pinText}>Reset Password</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
