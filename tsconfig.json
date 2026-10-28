@@ -16,6 +16,7 @@
     "allowJs": true
   },
   "include": [
+    "app.config.ts",
     "src/**/*",
     "node_modules/@types/**/*",
     "components/ESigning.tsx",

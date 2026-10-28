@@ -32,6 +32,7 @@ import {
   sendInboxMessage,
 } from "../src/utils/pimsApi";
 import { useRefreshTrigger } from "../hooks/useRefreshTrigger";
+import { colors } from "../src/theme/colors";
 
 export default function InboxList() {
   const { userData, loggedInUser } = useAuth();
@@ -243,7 +244,7 @@ export default function InboxList() {
                       }}
                       color={
                         selectedRecipientIds.includes(recipient.id)
-                          ? "#1B77BE"
+                          ? colors.primary
                           : undefined
                       }
                     />
@@ -431,22 +432,24 @@ const getStyles = (width: number, height: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      marginTop: height * 0.02,
+      marginTop: 12,
     },
     bodySection: {
       backgroundColor: "#fff",
-      borderRadius: 6,
+      borderRadius: 16,
     },
     border: {
       borderWidth: 1,
-      borderColor: "#1B77BE",
-      borderRadius: 6,
-      paddingHorizontal: height * 0.01,
+      borderColor: "#E5E7EB",
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: "#fff",
     },
     button: {
       width: width * 0.4,
       height: height * 0.05,
-      backgroundColor: "#1B77BE",
+      backgroundColor: colors.primary,
       paddingVertical: height * 0.007,
       paddingHorizontal: width * 0.04,
       marginBottom: height * 0.01,
@@ -471,12 +474,12 @@ const getStyles = (width: number, height: number) =>
       alignItems: "center",
     },
     activeTab: {
-      backgroundColor: "#1B77BE",
+      backgroundColor: colors.primary,
     },
     tabText: {
       fontSize: RFPercentage(2.2),
       fontWeight: "600",
-      color: "#1B77BE",
+      color: colors.primary,
     },
     activeTabText: {
       color: "#fff",
@@ -489,7 +492,7 @@ const getStyles = (width: number, height: number) =>
     },
     loader: {
       fontWeight: "bold",
-      color: "#1B77BE",
+      color: colors.primary,
       fontSize: RFPercentage(2.6),
       marginTop: height * 0.021,
       marginLeft: height * 0.01,
@@ -502,7 +505,7 @@ const getStyles = (width: number, height: number) =>
     title: {
       fontSize: RFPercentage(2.5),
       fontWeight: "600",
-      color: "#1B77BE",
+      color: colors.primary,
     },
     date: {
       fontSize: RFPercentage(2),
@@ -529,7 +532,7 @@ const getStyles = (width: number, height: number) =>
     modalTitle: {
       fontSize: RFPercentage(2.8),
       fontWeight: "bold",
-      color: "#1B77BE",
+      color: colors.primary,
       marginBottom: 16,
       textAlign: "center",
     },
@@ -551,7 +554,7 @@ const getStyles = (width: number, height: number) =>
       margin: 8,
     },
     addButton: {
-      backgroundColor: "#1B77BE",
+      backgroundColor: colors.primary,
       marginBottom: height * 0.02,
     },
     input: {
@@ -573,7 +576,7 @@ const getStyles = (width: number, height: number) =>
       alignItems: "center",
     },
     sendButton: {
-      backgroundColor: "#1B77BE",
+      backgroundColor: colors.primary,
     },
     closeButton: {
       backgroundColor: "#ccc",

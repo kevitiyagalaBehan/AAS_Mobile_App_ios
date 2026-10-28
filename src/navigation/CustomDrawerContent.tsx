@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   DrawerContentScrollView,
+  DrawerItem,
   DrawerItemList,
   useDrawerStatus,
 } from "@react-navigation/drawer";
@@ -17,25 +18,25 @@ import { RFPercentage } from "react-native-responsive-fontsize";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAuth } from "../context/AuthContext";
 import { handleLogout } from "../utils/logout";
-import {
-  getLinkedUsers,
-  requestPasswordReset,
-  revokePin,
-} from "../utils/pimsApi";
+import { getLinkedUsers, revokePin, requestPasswordReset } from "../utils/pimsApi";
 import {
   clearPinRegistration,
   getPinRegistration,
   hasPinRegistration,
 } from "../utils/pinStorage";
 import { navigationRef } from "./RootNavigation";
+import { DrawerMenuItem } from "./types";
+import { colors } from "../theme/colors";
 
 export default function CustomDrawerContent(props: any) {
   const { userData, setCurrentUserName, currentUserName, resetAuthState } =
     useAuth();
-  const { navigation } = props;
+  const { navigation, state, descriptors } = props;
+  const menuItems: DrawerMenuItem[] | undefined = props.menuItems;
   const drawerStatus = useDrawerStatus();
   const [hasPin, setHasPin] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [sendingReset, setSendingReset] = useState<boolean>(false);
   const { width, height } = useWindowDimensions();
   const styles = getStyles(width, height);
 
@@ -116,20 +117,27 @@ export default function CustomDrawerContent(props: any) {
     ]);
   };
 
-  const sendPasswordReset = async (email: string) => {
+  const sendResetEmail = async (email: string) => {
+    setSendingReset(true);
     try {
       const result = await requestPasswordReset(email);
-      if (!result) throw new Error("Unexpected Error");
+      if (!result) {
+        throw new Error("Unexpected Error");
+      }
       Alert.alert(result.success ? "Success" : "Error", result.message);
     } catch (error: any) {
       Alert.alert(
         "Error",
-        error.message || "Something went wrong. Please try again."
+        error.message || "Failed to send password reset request"
       );
+    } finally {
+      setSendingReset(false);
     }
   };
 
   const handleResetPasswordPress = () => {
+    if (sendingReset) return;
+
     if (!userEmail) {
       Alert.alert(
         "Reset Password",
@@ -143,9 +151,34 @@ export default function CustomDrawerContent(props: any) {
       `We'll send a password reset link to ${userEmail}.`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Send", onPress: () => sendPasswordReset(userEmail) },
+        { text: "Send", onPress: () => sendResetEmail(userEmail) },
       ]
     );
+  };
+
+  // Each menu item is a full-screen drawer screen; nothing is highlighted
+  // while the bottom tabs (MainTabs) are open.
+  const renderMenuItems = () => {
+    const focusedRoute = state.routes[state.index];
+    const { drawerItemStyle, drawerLabelStyle } =
+      descriptors[focusedRoute.key].options;
+
+    return menuItems!.map((item) => (
+      <DrawerItem
+        key={item.screen}
+        label={item.label}
+        focused={item.screen === focusedRoute.name}
+        style={drawerItemStyle}
+        labelStyle={drawerLabelStyle}
+        icon={({ color }) => (
+          <Ionicons name={item.icon as any} size={30} color={color} />
+        )}
+        onPress={() => {
+          navigation.navigate(item.screen);
+          navigation.closeDrawer();
+        }}
+      />
+    ));
   };
 
   return (
@@ -161,21 +194,24 @@ export default function CustomDrawerContent(props: any) {
         </Text>
       </View>
 
-      <DrawerItemList {...props} />
+      {menuItems ? renderMenuItems() : <DrawerItemList {...props} />}
 
       <TouchableOpacity style={styles.pinButton} onPress={handlePinPress}>
-        <Ionicons name="keypad" size={26} color="#00205A" />
+        <Ionicons name="keypad" size={26} color={colors.primary} />
         <Text style={styles.pinText}>
           {hasPin ? "PIN Login" : "Set Up PIN Login"}
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.pinButton}
+        style={styles.resetPasswordButton}
         onPress={handleResetPasswordPress}
+        disabled={sendingReset}
       >
-        <Ionicons name="lock-closed" size={26} color="#00205A" />
-        <Text style={styles.pinText}>Reset Password</Text>
+        <Ionicons name="key" size={26} color={colors.primary} />
+        <Text style={styles.resetPasswordText}>
+          {sendingReset ? "Sending..." : "Reset Password"}
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -215,7 +251,20 @@ const getStyles = (width: number, height: number) =>
     },
     pinText: {
       fontSize: RFPercentage(2),
-      color: "#00205A",
+      color: colors.primary,
+      fontWeight: "bold",
+      marginLeft: width * 0.03,
+    },
+    resetPasswordButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 15,
+      borderTopWidth: 1,
+      borderTopColor: "#ccc",
+    },
+    resetPasswordText: {
+      fontSize: RFPercentage(2),
+      color: colors.primary,
       fontWeight: "bold",
       marginLeft: width * 0.03,
     },

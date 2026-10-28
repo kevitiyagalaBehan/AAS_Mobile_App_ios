@@ -1,31 +1,47 @@
-import { StatusBar } from "expo-status-bar";
+import { StatusBar } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { ESignProvider } from "./src/context/ESignContext";
 import LoginScreen from "./src/screens/LoginScreen";
-import SignUpScreen from "./src/screens/SignUpScreen";
 import PinLoginScreen from "./src/screens/PinLoginScreen";
 import PinSetupScreen from "./src/screens/PinSetupScreen";
+import SignUpScreen from "./src/screens/SignUpScreen";
 import DrawerNavigatorOther from "./src/navigation/DrawerNavigatorOther";
 import DrawerNavigatorFamily from "./src/navigation/DrawerNavigatorFamily";
 import { useVersionCheck } from "./hooks/useVersionCheck";
 import UpdateModal from "./components/UpdateModal";
 import { useEffect, useState } from "react";
+import { getLoginRoute } from "./src/utils/pinStorage";
 import * as Notifications from "expo-notifications";
 import { navigationRef } from "./src/navigation/RootNavigation";
 import {
   InboxNotificationActionData,
   RootStackParamList,
 } from "./src/navigation/types";
-import { getLoginRoute } from "./src/utils/pinStorage";
+import { colors } from "./src/theme/colors";
 
 const Stack = createStackNavigator<RootStackParamList>();
+
+// Tab bar, drawer and header highlights use the theme's primary colour
+const navigationTheme = {
+  ...DefaultTheme,
+  colors: { ...DefaultTheme.colors, primary: colors.primary },
+};
 
 function AppNavigator() {
   const { userData } = useAuth();
   const { forceBlock, updateUrl } = useVersionCheck();
+
+  // useEffect(() => {
+  //   registerForPushNotificationsAsync().then((token) => {
+  //     if (token) {
+  //       console.log("Device push token:", token);
+  //     }
+  //   });
+  // }, []);
+
   const [loginRoute, setLoginRoute] = useState<"Login" | "PinLogin" | null>(
     null
   );
@@ -45,17 +61,39 @@ function AppNavigator() {
   return (
     <>
       <UpdateModal visible={forceBlock} updateUrl={updateUrl} />
-      <StatusBar style="dark" />
-      <Stack.Navigator
-        initialRouteName={getInitialScreen()}
-        screenOptions={{ headerShown: false }}
-      >
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="PinLogin" component={PinLoginScreen} />
-        <Stack.Screen name="PinSetup" component={PinSetupScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
-        <Stack.Screen name="Other" component={DrawerNavigatorOther} />
-        <Stack.Screen name="Family" component={DrawerNavigatorFamily} />
+
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <Stack.Navigator initialRouteName={getInitialScreen()}>
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PinLogin"
+          component={PinLoginScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PinSetup"
+          component={PinSetupScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="SignUp"
+          component={SignUpScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Other"
+          component={DrawerNavigatorOther}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Family"
+          component={DrawerNavigatorFamily}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </>
   );
@@ -123,7 +161,7 @@ function AppInner() {
   }, [isLoggedIn, userType]);
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
       <AppNavigator />
     </NavigationContainer>
   );

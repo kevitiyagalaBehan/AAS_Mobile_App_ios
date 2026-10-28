@@ -7,34 +7,23 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { useRefreshTrigger } from "../../hooks/useRefreshTrigger";
-import { usePortfolioSummary } from "../../hooks/usePortfolioSummaryFamily";
 import {
-  AssetAllocationFamily,
   Header,
-  ConsolidatedAssetAllocation,
-  AccountList,
-  TopTenInvestmentsFamily,
-  ConsolidatedAccounts,
+  HomeMessageCard,
+  AllocationBreakdown,
 } from "../../components";
-import { useAuth } from "../context/AuthContext";
 
 export default function HomeScreenFamily() {
   const { width, height } = useWindowDimensions();
   const { refreshTrigger, refreshing, onRefresh } = useRefreshTrigger();
-  const { userData } = useAuth();
-  const { authToken = "", accountId = "" } = userData ?? {};
-  const { data, loading, error } = usePortfolioSummary(
-    authToken,
-    accountId,
-    refreshTrigger
-  );
-  const styles = getStyles(width, height);
+  const navigation = useNavigation<any>();
+  const styles = getStyles(width);
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <Header />
         <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -45,25 +34,12 @@ export default function HomeScreenFamily() {
           }}
           showsVerticalScrollIndicator={false}
         >
+          <Header refreshTrigger={refreshTrigger} />
           <View style={styles.bodySection}>
-            <ConsolidatedAssetAllocation
-              data={data}
-              loading={loading}
-              error={error}
-            />
-            <AssetAllocationFamily
-              data={data}
-              loading={loading}
-              error={error}
-            />
-            <AccountList refreshTrigger={refreshTrigger} refreshing={false} />
-            <TopTenInvestmentsFamily
+            <HomeMessageCard refreshTrigger={refreshTrigger} />
+            <AllocationBreakdown
               refreshTrigger={refreshTrigger}
-              refreshing={false}
-            />
-            <ConsolidatedAccounts
-              refreshTrigger={refreshTrigger}
-              refreshing={false}
+              onSeeHoldings={() => navigation.navigate("Portfolio")}
             />
           </View>
         </ScrollView>
@@ -72,11 +48,11 @@ export default function HomeScreenFamily() {
   );
 }
 
-const getStyles = (width: number, height: number) =>
+const getStyles = (width: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      //backgroundColor: "#eee",
+      backgroundColor: "#eee",
     },
     bodySection: {
       paddingHorizontal: width * 0.02,

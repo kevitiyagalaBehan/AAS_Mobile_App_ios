@@ -1,28 +1,39 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { DrawerActions, useNavigation } from "@react-navigation/native";
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import HomeScreenOther from "../screens/HomeScreenOther";
 import ESigningScreen from "../screens/ESigningScreen";
+import PortfolioScreen from "../screens/PortfolioScreen";
+import SuperScreen from "../screens/SuperScreen";
 import { BottomTabParamListOther } from "./types";
 import { RFPercentage } from "react-native-responsive-fontsize";
 import InboxStackNavigator from "./InboxStackNavigator";
 import { useWindowDimensions, View, Text } from "react-native";
 import { useESign } from "../context/ESignContext";
+import { useHasSuperData } from "../../hooks/useHasSuperData";
+import { colors } from "../theme/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Tab = createBottomTabNavigator<BottomTabParamListOther>();
 
 export default function BottomTabOther() {
-  const navigation = useNavigation();
   const { toBeSignedCount } = useESign();
+  const hasSuper = useHasSuperData();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const tabBarStyle = {
+    height: height * 0.075 + insets.bottom,
+    paddingTop: height * 0.008,
+    paddingBottom: insets.bottom,
+  };
 
   return (
     <Tab.Navigator
       initialRouteName="HomeOther"
       screenOptions={{
-        tabBarStyle: { height: height * 0.09, paddingTop: height * 0.005 },
+        tabBarStyle,
+        tabBarActiveTintColor: colors.link,
         tabBarLabelStyle: { fontSize: RFPercentage(1.4), fontWeight: "bold" },
       }}
     >
@@ -38,6 +49,31 @@ export default function BottomTabOther() {
         }}
       />
       <Tab.Screen
+        name="Portfolio"
+        component={PortfolioScreen}
+        options={{
+          headerShown: false,
+          tabBarLabel: "Portfolio",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="pie-chart" size={size} color={color} />
+          ),
+        }}
+      />
+      {/* Only for accounts with super/pension members; Family Group accounts use BottomTabFamily */}
+      {hasSuper && (
+        <Tab.Screen
+          name="Super"
+          component={SuperScreen}
+          options={{
+            headerShown: false,
+            tabBarLabel: "Super",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="wallet" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
+      <Tab.Screen
         name="Inbox"
         component={InboxStackNavigator}
         options={({ route }) => {
@@ -45,11 +81,11 @@ export default function BottomTabOther() {
 
           return {
             headerShown: false,
-            tabBarLabel: "Inbox",
+            tabBarLabel: "Messages",
             tabBarStyle:
               routeName === "InboxDetail"
                 ? { display: "none" }
-                : { height: height * 0.09, paddingTop: height * 0.005 },
+                : tabBarStyle,
             tabBarLabelStyle: {
               fontSize: RFPercentage(1.4),
               fontWeight: "bold",
@@ -93,22 +129,6 @@ export default function BottomTabOther() {
               )}
             </View>
           ),
-        }}
-      />
-      <Tab.Screen
-        name="Menu"
-        component={HomeScreenOther}
-        options={{
-          tabBarLabel: "Menu",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="menu" size={size} color={color} />
-          ),
-        }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            navigation.dispatch(DrawerActions.openDrawer());
-          },
         }}
       />
     </Tab.Navigator>

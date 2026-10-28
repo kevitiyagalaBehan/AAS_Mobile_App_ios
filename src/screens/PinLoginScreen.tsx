@@ -23,6 +23,7 @@ import {
   PinRegistration,
 } from "../utils/pinStorage";
 import { RootStackParamList } from "../navigation/types";
+import { colors } from "../theme/colors";
 
 export default function PinLoginScreen() {
   const { startSession, enterApp } = useSession();
@@ -163,7 +164,7 @@ const getStyles = (width: number, height: number) =>
     title: {
       fontSize: RFPercentage(2.8),
       fontWeight: "bold",
-      color: "#00205A",
+      color: colors.primary,
       marginBottom: height * 0.01,
       textAlign: "center",
     },
@@ -185,7 +186,7 @@ const getStyles = (width: number, height: number) =>
       padding: 10,
     },
     secondaryText: {
-      color: "#1B77BE",
+      color: colors.primary,
       fontSize: RFPercentage(2),
       textDecorationLine: "underline",
     },

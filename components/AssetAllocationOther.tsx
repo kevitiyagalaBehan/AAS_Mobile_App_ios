@@ -9,6 +9,7 @@ import React, { useState, useEffect } from "react";
 import DonutChart from "./DonutChart";
 import { RFPercentage } from "react-native-responsive-fontsize";
 import { getColorForAssetClass } from "../src/utils/assetColors";
+import { colors } from "../src/theme/colors";
 import { ChartData, PortfolioData, Props } from "../src/navigation/types";
 import { getAssetAllocationSummaryOther } from "../src/utils/pimsApi";
 import { useAuth } from "../src/context/AuthContext";
@@ -79,7 +80,7 @@ export default function AssetAllocationOther({ refreshTrigger }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.border}>
-        <Text style={styles.bodyText}>Asset Allocation</Text>
+        <Text style={styles.bodyText}>Allocation chart</Text>
         {chartData.length > 0 ? (
           <View style={styles.chartContainer}>
             <View style={styles.donutWrapper}>
@@ -132,27 +133,29 @@ const getStyles = (width: number, height: number) =>
     container: {
       flex: 1,
       backgroundColor: "#fff",
-      borderRadius: 6,
+      borderRadius: 16,
       //marginBottom: height * 0.01,
-      marginTop: height * 0.01,
+      marginTop: 12,
     },
     border: {
       borderWidth: 1,
-      borderColor: "#1B77BE",
-      borderRadius: 6,
-      paddingHorizontal: width * 0.02,
+      borderColor: "#E5E7EB",
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: "#fff",
     },
     loader: {
       fontWeight: "bold",
-      color: "#1B77BE",
+      color: colors.primary,
       fontSize: RFPercentage(2.6),
       marginTop: height * 0.363,
       marginLeft: height * 0.02,
     },
     bodyText: {
-      //fontWeight: "bold",
-      color: "#1B77BE",
-      fontSize: RFPercentage(2.6),
+      fontWeight: "bold",
+      color: colors.primary,
+      fontSize: RFPercentage(2.2),
       marginBottom: -15,
     },
     errorText: {

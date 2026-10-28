@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,385 +6,314 @@ import {
   useWindowDimensions,
   TouchableOpacity,
   Modal,
+  TextInput,
 } from "react-native";
 import { RFPercentage } from "react-native-responsive-fontsize";
-import { useAuth } from "../src/context/AuthContext";
-import { getInvestments } from "../src/utils/pimsApi";
-import {
-  Investment,
-  InvestmentsResponse,
-  Props,
-} from "../src/navigation/types";
+import { Ionicons } from "@expo/vector-icons";
+import { Investment, InvestmentsResponse } from "../src/navigation/types";
+import { getColorForAssetClass } from "../src/utils/assetColors";
+import { formatCurrency } from "../src/utils/format";
+import { colors } from "../src/theme/colors";
+import Card from "./Card";
 
-export default function InvestmentBreakdown({ refreshTrigger }: Props) {
-  const { userData } = useAuth();
+const formatAmount = (value: number) =>
+  value.toLocaleString("en-AU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+type HoldingsProps = {
+  data: InvestmentsResponse;
+};
+
+// Holdings grouped by asset class, with search and a details popup
+export default function Holdings({ data }: HoldingsProps) {
   const { width, height } = useWindowDimensions();
-  const [data, setData] = useState<InvestmentsResponse | null>(null);
+  const [query, setQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<Investment | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!userData?.authToken || !userData?.accountId) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const res = await getInvestments(
-          userData.authToken,
-          userData.accountId
-        );
-        setData(res);
-      } catch (err) {
-        setError("Failed to load investment details.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [userData?.authToken, userData?.accountId, refreshTrigger]);
-
   const styles = getStyles(width, height);
 
-  if (loading) {
-    return <Text style={styles.loader}>Loading...</Text>;
-  }
+  const search = query.trim().toLowerCase();
+  const filtered = search
+    ? data.investments.filter(
+        (inv) =>
+          inv.code.toLowerCase().includes(search) ||
+          inv.description?.toLowerCase().includes(search)
+      )
+    : data.investments;
 
-  if (!data) {
-    return <Text style={styles.errorText}>No portfolio data available</Text>;
-  }
-
-  const grouped = data.investments.reduce((acc, inv) => {
-    if (!acc[inv.assetCategory]) acc[inv.assetCategory] = {};
-    if (!acc[inv.assetCategory][inv.assetClass])
-      acc[inv.assetCategory][inv.assetClass] = [];
-    acc[inv.assetCategory][inv.assetClass].push(inv);
+  // Keep the API's order of asset classes
+  const groups = filtered.reduce((acc, inv) => {
+    const group = acc.find((g) => g.assetClass === inv.assetClass);
+    if (group) group.items.push(inv);
+    else acc.push({ assetClass: inv.assetClass, items: [inv] });
     return acc;
-  }, {} as Record<string, Record<string, Investment[]>>);
+  }, [] as { assetClass: string; items: Investment[] }[]);
 
-  const handleCodePress = (item: Investment) => {
-    setSelectedItem(item);
-    setModalVisible(true);
-  };
+  // Respect the adviser's settings for which columns clients can see
+  const { settings } = data;
+  const detailRows = selectedItem
+    ? [
+        { label: "Quantity", value: formatAmount(selectedItem.quantity) },
+        { label: "Price ($)", value: formatAmount(selectedItem.price) },
+        settings?.column_BookCost !== false && {
+          label: "Cost ($)",
+          value: formatAmount(selectedItem.bookCost),
+        },
+        { label: "Market value ($)", value: formatAmount(selectedItem.marketValue) },
+        {
+          label: "Portfolio weight (%)",
+          value: selectedItem.marketPercentage.toFixed(2),
+        },
+        settings?.column_EstIncome !== false && {
+          label: "Est. income ($)",
+          value: formatAmount(selectedItem.income),
+        },
+        settings?.column_EstYield !== false && {
+          label: "Est. yield (%)",
+          value: selectedItem.yield.toFixed(2),
+        },
+      ].filter((row): row is { label: string; value: string } => !!row)
+    : [];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.border}>
-        <Text style={styles.bodyText}>Portfolio</Text>
-        <View style={styles.tableContainer}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.cell, styles.headerText, { flex: 2 }]}>
-              Code
-            </Text>
-            <Text style={[styles.cell, styles.headerText, styles.rightAlign]}>
-              Mkt ($)
-            </Text>
-            <Text style={[styles.cell, styles.headerText, styles.rightAlign]}>
-              Mkt (%)
-            </Text>
-          </View>
+    <View>
+      <View style={styles.searchBox}>
+        <Ionicons name="search" size={18} color="#6B7280" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search holdings"
+          placeholderTextColor="#9CA3AF"
+          value={query}
+          onChangeText={setQuery}
+          autoCorrect={false}
+          autoCapitalize="characters"
+          clearButtonMode="while-editing"
+        />
+      </View>
 
-          {Object.entries(grouped).map(([category, classes], catIndex) => {
-            const categoryMarketValue = Object.values(classes)
-              .flat()
-              .reduce((sum, inv) => sum + inv.marketValue, 0);
-            const categoryMarketPercentage = Object.values(classes)
-              .flat()
-              .reduce((sum, inv) => sum + inv.marketPercentage, 0);
+      {groups.length === 0 && (
+        <Text style={styles.emptyText}>
+          {search ? "No holdings match your search" : "No holdings available"}
+        </Text>
+      )}
 
-            return (
-              <React.Fragment key={catIndex}>
-                <View style={styles.categoryRow}>
-                  <Text style={[styles.cell, styles.boldText, { flex: 1 }]}>
-                    {category}
-                  </Text>
-                  <Text
-                    style={[styles.cell, styles.rightAlign, styles.boldText]}
-                  >
-                    {categoryMarketValue.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </Text>
-                  <Text
-                    style={[styles.cell, styles.rightAlign, styles.boldText]}
-                  >
-                    {categoryMarketPercentage.toFixed(2)}
+      {groups.map(({ assetClass, items }) => {
+        const classColor = getColorForAssetClass(assetClass);
+        const classValue = items.reduce((sum, inv) => sum + inv.marketValue, 0);
+        const classPercent = items.reduce(
+          (sum, inv) => sum + inv.marketPercentage,
+          0
+        );
+
+        return (
+          <Card key={assetClass} style={styles.groupCard}>
+            <View style={styles.groupHeader}>
+              <View style={[styles.dot, { backgroundColor: classColor }]} />
+              <Text style={styles.groupName} numberOfLines={1}>
+                {assetClass}
+              </Text>
+              <Text style={styles.groupValue}>{formatCurrency(classValue)}</Text>
+              <Text style={styles.groupPercent}>{classPercent.toFixed(2)}%</Text>
+            </View>
+
+            {items.map((inv, idx) => (
+              <TouchableOpacity
+                key={`${inv.code}-${idx}`}
+                style={styles.holdingRow}
+                onPress={() => setSelectedItem(inv)}
+                activeOpacity={0.6}
+              >
+                <View style={styles.holdingMain}>
+                  <View style={styles.holdingTopLine}>
+                    <Text style={styles.code} numberOfLines={1}>
+                      {inv.code}
+                    </Text>
+                    <Text style={styles.value}>
+                      {formatCurrency(inv.marketValue)}
+                    </Text>
+                  </View>
+                  <View style={styles.weightTrack}>
+                    <View
+                      style={[
+                        styles.weightFill,
+                        {
+                          width: `${Math.min(Math.max(inv.marketPercentage, 0), 100)}%`,
+                          backgroundColor: classColor,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.weightText}>
+                    {inv.marketPercentage.toFixed(2)}%
                   </Text>
                 </View>
+                <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+              </TouchableOpacity>
+            ))}
+          </Card>
+        );
+      })}
 
-                {Object.entries(classes).map(
-                  ([className, items], classIndex) => {
-                    const classMarketValue = items.reduce(
-                      (sum, inv) => sum + inv.marketValue,
-                      0
-                    );
-                    const classMarketPercentage = items.reduce(
-                      (sum, inv) => sum + inv.marketPercentage,
-                      0
-                    );
-
-                    return (
-                      <React.Fragment key={classIndex}>
-                        <View style={styles.classRow}>
-                          <Text
-                            style={[styles.cell, styles.boldText, { flex: 1 }]}
-                          >
-                            {className}
-                          </Text>
-                          <Text style={styles.cell}></Text>
-                          <Text style={styles.cell}></Text>
-                        </View>
-
-                        {items.map((inv, idx) => (
-                          <View key={idx} style={styles.dataRow}>
-                            <TouchableOpacity
-                              onPress={() => handleCodePress(inv)}
-                              style={styles.cell}
-                            >
-                              <Text
-                                style={{
-                                  color: "#1B77BE",
-                                  textDecorationLine: "underline",
-                                }}
-                              >
-                                {inv.code}
-                              </Text>
-                            </TouchableOpacity>
-                            <Text style={[styles.cell, styles.rightAlign]}>
-                              {inv.marketValue.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </Text>
-                            <Text style={[styles.cell, styles.rightAlign]}>
-                              {inv.marketPercentage.toFixed(2)}
-                            </Text>
-                          </View>
-                        ))}
-
-                        <View style={styles.subtotalRow}>
-                          <Text
-                            style={[styles.cell, styles.boldText, { flex: 1 }]}
-                          ></Text>
-                          <Text
-                            style={[
-                              styles.cell,
-                              styles.rightAlign,
-                              styles.boldText,
-                            ]}
-                          >
-                            {classMarketValue.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.cell,
-                              styles.rightAlign,
-                              styles.boldText,
-                            ]}
-                          >
-                            {classMarketPercentage.toFixed(2)}
-                          </Text>
-                        </View>
-                      </React.Fragment>
-                    );
-                  }
-                )}
-              </React.Fragment>
-            );
-          })}
-          <View style={styles.grandTotalRow}>
-            <Text style={[styles.cell, styles.boldText, { flex: 1 }]}>
-              Total
-            </Text>
-            <Text style={[styles.cell, styles.rightAlign, styles.boldText]}>
-              {data.investments
-                .reduce((sum, inv) => sum + inv.marketValue, 0)
-                .toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-            </Text>
-            <Text style={[styles.cell, styles.rightAlign, styles.boldText]}>
-              {data.investments
-                .reduce((sum, inv) => sum + inv.marketPercentage, 0)
-                .toFixed(2)}
-            </Text>
-          </View>
-        </View>
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              {selectedItem && (
-                <>
-                  <Text style={styles.modalTitle}>{selectedItem.code}</Text>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Description:</Text>
-                    <Text style={styles.modalText}>
-                      {selectedItem.description}
-                    </Text>
-                  </View>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Quantity:</Text>
-                    <Text style={styles.modalText}>
-                      {selectedItem.quantity.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </Text>
-                  </View>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Cost ($):</Text>
-                    <Text style={styles.modalText}>
-                      {selectedItem.bookCost.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </Text>
-                  </View>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Price ($):</Text>
-                    <Text style={styles.modalText}>
-                      {selectedItem.bookCost.toFixed(2)}
-                    </Text>
-                  </View>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Mkt ($):</Text>
-                    <Text style={styles.modalText}>
-                      {selectedItem.marketValue.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </Text>
-                  </View>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Mkt (%):</Text>
-                    <Text style={styles.modalText}>
-                      {selectedItem.marketPercentage.toFixed(2)}
-                    </Text>
-                  </View>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Yld ($):</Text>
-                    <Text style={styles.modalText}>
-                      {selectedItem.income.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </Text>
-                  </View>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Yld (%):</Text>
-                    <Text style={styles.modalText}>
-                      {selectedItem.yield.toFixed(2)}
-                    </Text>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={!!selectedItem}
+        onRequestClose={() => setSelectedItem(null)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {selectedItem && (
+              <>
+                <View style={styles.modalHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.modalTitle}>{selectedItem.code}</Text>
+                    {!!selectedItem.description && (
+                      <Text style={styles.modalSubtitle}>
+                        {selectedItem.description}
+                      </Text>
+                    )}
                   </View>
                   <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={() => setModalVisible(false)}
+                    onPress={() => setSelectedItem(null)}
+                    hitSlop={10}
+                    accessibilityLabel="Close"
                   >
-                    <Text style={styles.closeButtonText}>Close</Text>
+                    <Ionicons name="close" size={24} color="#6B7280" />
                   </TouchableOpacity>
-                </>
-              )}
-            </View>
+                </View>
+
+                {detailRows.map((row, idx) => (
+                  <View
+                    key={row.label}
+                    style={[
+                      styles.modalRow,
+                      idx === detailRows.length - 1 && styles.modalLastRow,
+                    ]}
+                  >
+                    <Text style={styles.modalLabel}>{row.label}</Text>
+                    <Text style={styles.modalValue}>{row.value}</Text>
+                  </View>
+                ))}
+
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setSelectedItem(null)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
-        </Modal>
-      </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const getStyles = (width: number, height: number) =>
   StyleSheet.create({
-    container: {
-      //flex: 1,
+    searchBox: {
+      flexDirection: "row",
+      alignItems: "center",
       backgroundColor: "#fff",
-      //marginBottom: height * 0.01,
-      marginTop: height * 0.02,
-      borderRadius: 6,
-    },
-    border: {
+      borderRadius: 14,
       borderWidth: 1,
-      borderColor: "#1B77BE",
-      borderRadius: 6,
-      paddingHorizontal: width * 0.02,
+      borderColor: "#E5E7EB",
+      paddingHorizontal: 14,
+      marginTop: 12,
     },
-    loader: {
-      fontWeight: "bold",
-      color: "#1B77BE",
-      fontSize: RFPercentage(2.6),
-      marginTop: height * 0.021,
-      marginLeft: height * 0.01,
-    },
-    errorText: {
-      color: "red",
+    searchInput: {
+      flex: 1,
+      paddingVertical: 12,
+      marginLeft: 8,
       fontSize: RFPercentage(2),
+      color: "#111827",
+    },
+    emptyText: {
       textAlign: "center",
-      marginTop: height * 0.3,
+      color: "#6B7280",
+      fontSize: RFPercentage(1.9),
+      marginTop: height * 0.05,
     },
-    bodyText: {
-      //fontWeight: "bold",
-      color: "#1B77BE",
-      marginBottom: height * 0.005,
-      fontSize: RFPercentage(2.6),
+    groupCard: {
+      paddingVertical: 4,
+      paddingHorizontal: 0,
     },
-    tableContainer: {
-      marginBottom: height * 0.01,
-    },
-    tableHeader: {
+    groupHeader: {
       flexDirection: "row",
-      backgroundColor: "#1B77BE",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: "#E5E7EB",
     },
-    headerText: {
+    dot: {
+      width: 10,
+      height: 10,
+      borderRadius: 3,
+      marginRight: 10,
+    },
+    groupName: {
       flex: 1,
-      color: "#fff",
-      fontWeight: "bold",
-      fontSize: RFPercentage(1.8),
-    },
-    categoryRow: {
-      flexDirection: "row",
-      backgroundColor: "#D6E5F3",
-    },
-    classRow: {
-      flexDirection: "row",
-      backgroundColor: "#F0F4F7",
-    },
-    dataRow: {
-      flexDirection: "row",
-    },
-    grandTotalRow: {
-      flexDirection: "row",
-      //backgroundColor: "#1B77BE",
-      borderTopWidth: 1,
-      borderColor: "#000",
-    },
-    subtotalRow: {
-      flexDirection: "row",
-    },
-    cell: {
-      flex: 1,
-      paddingVertical: height * 0.005,
-      paddingHorizontal: width * 0.02,
       fontSize: RFPercentage(2),
-    },
-    rightAlign: {
-      textAlign: "right",
-    },
-    boldText: {
       fontWeight: "bold",
+      color: colors.primary,
+    },
+    groupValue: {
+      fontSize: RFPercentage(1.8),
+      color: "#6B7280",
+      marginRight: 10,
+    },
+    groupPercent: {
+      fontSize: RFPercentage(1.8),
+      fontWeight: "bold",
+      color: colors.primary,
+    },
+    holdingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    holdingMain: {
+      flex: 1,
+      marginRight: 12,
+    },
+    holdingTopLine: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    code: {
+      flexShrink: 1,
+      fontSize: RFPercentage(2),
+      fontWeight: "bold",
+      color: colors.primary,
+      marginRight: 8,
+    },
+    value: {
+      fontSize: RFPercentage(2),
+      fontWeight: "600",
+      color: "#111827",
+    },
+    weightTrack: {
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: "#E5E7EB",
+      overflow: "hidden",
+      marginTop: 8,
+      width: "80%",
+    },
+    weightFill: {
+      height: "100%",
+      borderRadius: 3,
+    },
+    weightText: {
+      alignSelf: "flex-end",
+      fontSize: RFPercentage(1.6),
+      color: "#6B7280",
+      marginTop: 2,
     },
     modalContainer: {
       flex: 1,
@@ -393,34 +322,48 @@ const getStyles = (width: number, height: number) =>
       backgroundColor: "rgba(0,0,0,0.5)",
     },
     modalContent: {
-      width: width * 0.8,
+      width: width * 0.85,
       backgroundColor: "white",
-      borderRadius: 10,
+      borderRadius: 12,
       padding: width * 0.05,
     },
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: height * 0.015,
+    },
     modalTitle: {
-      fontSize: RFPercentage(2.5),
+      fontSize: RFPercentage(2.6),
       fontWeight: "bold",
-      color: "#4A90E2",
-      marginBottom: height * 0.02,
-      textAlign: "center",
+      color: colors.primary,
+    },
+    modalSubtitle: {
+      fontSize: RFPercentage(1.8),
+      color: "#6B7280",
+      marginTop: 2,
     },
     modalRow: {
       flexDirection: "row",
-      marginBottom: height * 0.015,
+      justifyContent: "space-between",
+      paddingVertical: height * 0.01,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: "#E5E7EB",
+    },
+    modalLastRow: {
+      borderBottomWidth: 0,
     },
     modalLabel: {
-      fontWeight: "bold",
-      width: width * 0.3,
-      fontSize: RFPercentage(2),
+      fontSize: RFPercentage(1.9),
+      color: "#6B7280",
     },
-    modalText: {
-      flex: 1,
-      fontSize: RFPercentage(2),
+    modalValue: {
+      fontSize: RFPercentage(1.9),
+      fontWeight: "600",
+      color: "#111827",
     },
     closeButton: {
       marginTop: height * 0.02,
-      backgroundColor: "#00205A",
+      backgroundColor: colors.primary,
       padding: width * 0.03,
       borderRadius: 10,
       alignItems: "center",

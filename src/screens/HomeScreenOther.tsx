@@ -7,28 +7,23 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { useRefreshTrigger } from "../../hooks/useRefreshTrigger";
 import {
-  PortfolioSummary,
-  AssetAllocationOther,
   Header,
-  PortfolioBalanceSummaryHome,
-  ContributionCapSummary,
-  PensionLimitSummary,
-  EstimatedMemberStatement,
-  TopTenInvestments,
-  InvestmentPerformance,
+  HomeMessageCard,
+  AllocationBreakdown,
 } from "../../components";
 
 export default function HomeScreenOther() {
   const { width, height } = useWindowDimensions();
   const { refreshTrigger, refreshing, onRefresh } = useRefreshTrigger();
+  const navigation = useNavigation<any>();
   const styles = getStyles(width, height);
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <Header />
         <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -39,38 +34,12 @@ export default function HomeScreenOther() {
           }}
           showsVerticalScrollIndicator={false}
         >
+          <Header refreshTrigger={refreshTrigger} />
           <View style={styles.bodySection}>
-            <PortfolioSummary
+            <HomeMessageCard refreshTrigger={refreshTrigger} />
+            <AllocationBreakdown
               refreshTrigger={refreshTrigger}
-              refreshing={false}
-            />
-            <AssetAllocationOther
-              refreshTrigger={refreshTrigger}
-              refreshing={false}
-            />
-            <PortfolioBalanceSummaryHome
-              refreshTrigger={refreshTrigger}
-              refreshing={false}
-            />
-            <TopTenInvestments
-              refreshTrigger={refreshTrigger}
-              refreshing={false}
-            />
-            <InvestmentPerformance
-              refreshTrigger={refreshTrigger}
-              refreshing={false}
-            />
-            <ContributionCapSummary
-              refreshTrigger={refreshTrigger}
-              refreshing={false}
-            />
-            <PensionLimitSummary
-              refreshTrigger={refreshTrigger}
-              refreshing={false}
-            />
-            <EstimatedMemberStatement
-              refreshTrigger={refreshTrigger}
-              refreshing={false}
+              onSeeHoldings={() => navigation.navigate("Portfolio")}
             />
           </View>
         </ScrollView>
