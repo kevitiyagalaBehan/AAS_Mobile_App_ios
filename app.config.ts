@@ -5,7 +5,7 @@ export default {
     name: "AAS",
     slug: "AAS",
     owner: "aas_mobile",
-    version: "1.0.7",
+    version: "1.0.8",
     orientation: "default",
     icon: "./assets/ios-light.png",
     userInterfaceStyle: "light",
@@ -42,6 +42,8 @@ export default {
         }
       ],
       "expo-secure-store",
+      "@config-plugins/react-native-blob-util",
+      "@config-plugins/react-native-pdf",
       "expo-font"
     ],
     extra: {

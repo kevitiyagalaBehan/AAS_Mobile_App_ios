@@ -34,6 +34,8 @@ export type RootStackParamList = {
   Login: undefined;
   PinLogin: undefined;
   PinSetup: { mode: "afterLogin" | "settings" };
+  // Either a Documents server path (exchanged via getDocumentViewUrl) or a direct PDF url
+  PdfViewer: { title: string } & ({ path: string } | { url: string });
   Other: { screen?: string; params?: object };
   Family: { screen?: string; params?: object };
   SignUp: undefined;
