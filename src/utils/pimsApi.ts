@@ -30,6 +30,7 @@ import {
   RegisterPinResult,
   PinLoginResult,
   RevokePinResult,
+  ClientProfile,
 } from "../navigation/types";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
@@ -732,6 +733,26 @@ export const getConsolidateData = async (
     console.error("Fetch failed:", error);
     return null;
   }
+};
+
+export const getClientProfile = async (
+  authToken: string,
+  accountId: string
+): Promise<ClientProfile | null> => {
+  const response = await fetch(`${apiBaseUrl}/ClientProfile/${accountId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return Array.isArray(data) && data.length > 0 ? data[0] : null;
 };
 
 export const getClientAccountDetails = async (
