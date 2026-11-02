@@ -43,7 +43,7 @@ export default function HomeScreenOther() {
             <HomeMessageCard refreshTrigger={refreshTrigger} />
             <AllocationBreakdown
               refreshTrigger={refreshTrigger}
-              onSeeHoldings={() => navigation.navigate("Portfolio")}
+              collapsible
             />
             <RecentCashTransactions
               refreshTrigger={refreshTrigger}
