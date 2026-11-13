@@ -2,11 +2,13 @@ import { NavigationProp } from "@react-navigation/native";
 import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getLoginRoute } from "./pinStorage";
+import { logoutAllDevices } from "./pimsApi";
 
 export const handleLogout = async (
   navigation: NavigationProp<any>,
   showConfirmation: boolean = true,
-  authContextReset?: () => void
+  authContextReset?: () => void,
+  authToken?: string
 ) => {
   if (showConfirmation) {
     Alert.alert("Logout", "Are you sure you want to log out?", [
@@ -14,19 +16,23 @@ export const handleLogout = async (
       {
         text: "Logout",
         onPress: async () => {
-          await performLogout(navigation, authContextReset);
+          await performLogout(navigation, authContextReset, authToken);
         },
       },
     ]);
   } else {
-    await performLogout(navigation, authContextReset);
+    await performLogout(navigation, authContextReset, authToken);
   }
 };
 
 const performLogout = async (
   navigation: NavigationProp<any>,
-  authContextReset?: () => void
+  authContextReset?: () => void,
+  authToken?: string
 ) => {
+  // Not awaited: it only updates a status on the server, so logout never waits on the network.
+  if (authToken) logoutAllDevices(authToken);
+
   try {
     await AsyncStorage.clear();
 

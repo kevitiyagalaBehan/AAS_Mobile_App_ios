@@ -9,12 +9,17 @@ import PinLoginScreen from "./src/screens/PinLoginScreen";
 import PinSetupScreen from "./src/screens/PinSetupScreen";
 import SignUpScreen from "./src/screens/SignUpScreen";
 import PdfViewerScreen from "./src/screens/PdfViewerScreen";
+import ContributionCapDetailScreen from "./src/screens/ContributionCapDetailScreen";
+import MemberBalanceDetailScreen from "./src/screens/MemberBalanceDetailScreen";
+import PensionDetailScreen from "./src/screens/PensionDetailScreen";
 import DrawerNavigatorOther from "./src/navigation/DrawerNavigatorOther";
 import DrawerNavigatorFamily from "./src/navigation/DrawerNavigatorFamily";
 import { useVersionCheck } from "./hooks/useVersionCheck";
 import UpdateModal from "./components/UpdateModal";
 import { useEffect, useState } from "react";
 import { getLoginRoute } from "./src/utils/pinStorage";
+import { buildDeviceInfo } from "./src/utils/deviceInfo";
+import { registerDevice } from "./src/utils/pimsApi";
 import * as Notifications from "expo-notifications";
 import { navigationRef, inboxRoute } from "./src/navigation/RootNavigation";
 import {
@@ -35,13 +40,12 @@ function AppNavigator() {
   const { userData } = useAuth();
   const { forceBlock, updateUrl } = useVersionCheck();
 
-  // useEffect(() => {
-  //   registerForPushNotificationsAsync().then((token) => {
-  //     if (token) {
-  //       console.log("Device push token:", token);
-  //     }
-  //   });
-  // }, []);
+  // Registers this install with the server on every launch. Doesn't block startup.
+  useEffect(() => {
+    buildDeviceInfo()
+      .then(registerDevice)
+      .catch((error) => console.warn("Device registration skipped:", error));
+  }, []);
 
   const [loginRoute, setLoginRoute] = useState<"Login" | "PinLogin" | null>(
     null
@@ -98,6 +102,21 @@ function AppNavigator() {
         <Stack.Screen
           name="PdfViewer"
           component={PdfViewerScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ContributionCapDetail"
+          component={ContributionCapDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MemberBalanceDetail"
+          component={MemberBalanceDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PensionDetail"
+          component={PensionDetailScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

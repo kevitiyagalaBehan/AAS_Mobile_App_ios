@@ -36,6 +36,10 @@ export type RootStackParamList = {
   PinSetup: { mode: "afterLogin" | "settings" };
   // Either a Documents server path (exchanged via getDocumentViewUrl) or a direct PDF url
   PdfViewer: { title: string } & ({ path: string } | { url: string });
+  // memberName opens on that member's tab
+  ContributionCapDetail: { memberName?: string } | undefined;
+  MemberBalanceDetail: { memberName?: string } | undefined;
+  PensionDetail: { memberName?: string } | undefined;
   Other: { screen?: string; params?: object };
   Family: { screen?: string; params?: object };
   SignUp: undefined;
@@ -146,6 +150,30 @@ export interface LoginResponse {
   accountType: string;
 }
 
+// Sent with login, PIN login, PIN setup and device registration.
+export interface DeviceInfo {
+  deviceId: string;
+  platform: string;
+  osVersion: string;
+  deviceModel: string;
+  appVersion: string;
+  buildNumber: string;
+  pushToken: string | null;
+}
+
+// The logged-in user's practice, returned by both logins and cached for the login screens.
+export interface PracticeInfo {
+  practiceId: number;
+  practiceBrand: string | null;
+  practiceName: string | null;
+  logoUrl: string | null;
+  logoVersion: string | null;
+}
+
+export type LoginResult =
+  | { success: true; login: LoginResponse; practice: PracticeInfo | null }
+  | { success: false; message: string };
+
 export type RegisterPinResult =
   | { success: true; deviceToken: string }
   | { success: false; message: string };
@@ -170,10 +198,25 @@ export interface ClientProfile {
   userLevelName: string;
 }
 
+// pin_disabled_code values from the server. Kept as a string so a new code doesn't break parsing.
+export type PinDisabledCode =
+  | "blocked"
+  | "device_not_found"
+  | "expired"
+  | "locked"
+  | "user_inactive"
+  | "user"
+  | (string & {});
+
 export type PinLoginResult =
-  | { status: "success"; login: LoginResponse; newDeviceToken: string | null }
+  | {
+      status: "success";
+      login: LoginResponse;
+      newDeviceToken: string | null;
+      practice: PracticeInfo | null;
+    }
   | { status: "invalid"; message: string }
-  | { status: "disabled"; message: string }
+  | { status: "disabled"; message: string; code: PinDisabledCode | null }
   | { status: "error"; message: string };
 
 export interface AssetAllocationSummary {
@@ -251,15 +294,17 @@ export type SelectedData = {
   year: number;
 };
 
+export interface FinancialYear {
+  endDate: string;
+  financialYear: string;
+  id: string;
+  isCurrent: boolean;
+  startDate: string;
+}
+
 export interface ContributionCap {
   accountName: string;
-  financialYear: {
-    endDate: string;
-    financialYear: string;
-    id: string;
-    isCurrent: boolean;
-    startDate: string;
-  };
+  financialYear: FinancialYear;
   members: {
     age: number;
     birthDate: string;
@@ -273,15 +318,64 @@ export interface ContributionCap {
   }[];
 }
 
+export interface ContributionTransaction {
+  amount: number;
+  classification: string;
+  date: string;
+  id: string;
+  type: string;
+}
+
+// One entry per member. getContributionCapDetailed normalises keys to camelCase,
+// since the API docs show PascalCase but the server may send either.
+export interface ContributionCapDetailed {
+  age: number;
+  ageAsAt: string;
+  birthDate: string;
+  ccAvailable: number;
+  ccMaximum: number;
+  ccPaidToDate: number;
+  companyId: string;
+  contactName: string;
+  contributionTransactions: ContributionTransaction[];
+  email: string;
+  id: string;
+  memberName: string;
+  memberRecordId: number;
+  nccAvailable: number;
+  nccMaximum: number;
+  nccPaidToDate: number;
+  platform: string;
+}
+
+// One row of pension limit figures: a single pension account, or the member's
+// gross / PAYG tax / net totals
+export interface PensionLimitFigures {
+  description: string;
+  drawdownsToDate: number;
+  max: number;
+  minimum: number;
+  plan: number;
+  remainingUntilMax: number;
+  requiredForMinimum: number;
+  requiredForPlan: number;
+  taxFree: number;
+}
+
+// One entry per member. getPensionLimitMembers normalises keys to camelCase,
+// since the API docs show PascalCase ("PAYGTax" becomes "paygTax").
+export interface PensionLimitMember {
+  memberId: number;
+  memberName: string;
+  grossDrawdowns: PensionLimitFigures;
+  netDrawdowns: PensionLimitFigures;
+  paygTax: PensionLimitFigures;
+  pensionAccountSummary: PensionLimitFigures[];
+}
+
 export interface PensionLimitDetails {
   accountName: string;
-  financialYear: {
-    endDate: string;
-    financialYear: string;
-    id: string;
-    isCurrent: boolean;
-    startDate: string;
-  };
+  financialYear: FinancialYear;
   members: {
     age: number;
     birthDate: string;

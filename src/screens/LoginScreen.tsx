@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  Image,
   Alert,
   StyleSheet,
   TouchableOpacity,
@@ -16,6 +15,8 @@ import { useNavigation } from "@react-navigation/native";
 import { FontAwesome } from "@expo/vector-icons";
 import { loginUser, requestPasswordReset } from "../utils/pimsApi";
 import { LoginScreenNavigationProp } from "../navigation/types";
+import { buildDeviceInfo } from "../utils/deviceInfo";
+import PracticeLogo from "../../components/PracticeLogo";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { RFPercentage } from "react-native-responsive-fontsize";
 import { useSession } from "../../hooks/useSession";
@@ -39,11 +40,12 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const response = await loginUser(username, password);
+      const deviceInfo = await buildDeviceInfo();
+      const result = await loginUser(username, password, deviceInfo);
 
-      if (!response) throw new Error("Invalid login credentials");
+      if (!result.success) throw new Error(result.message);
 
-      await startSession(response);
+      await startSession(result.login, result.practice);
 
       // Users who already have a PIN only reach this screen if they forgot it or are a
       // different person on a shared device, so offer (re)setup every time.
@@ -105,10 +107,9 @@ export default function LoginScreen() {
         style={{ flex: 1 }}
       >
         <SafeAreaView style={styles.container}>
-          <Image
-            source={require("../../assets/aas_logo.png")}
+          <PracticeLogo
             style={styles.logo}
-            resizeMode="contain"
+            practiceLogoStyle={styles.practiceLogo}
           />
 
           <TextInput
@@ -244,6 +245,9 @@ const getStyles = (width: number, height: number) =>
       width: width * 0.5,
       height: height * 0.2,
       //marginBottom: height * 0.05,
+    },
+    practiceLogo: {
+      marginBottom: height * 0.03,
     },
     input: {
       width: "100%",
