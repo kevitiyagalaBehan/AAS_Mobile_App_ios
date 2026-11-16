@@ -8,7 +8,10 @@ import {
   PortfolioData,
   AssetAllocationSummary,
   ContributionCap,
+  ContributionCapDetailed,
+  FinancialYear,
   PensionLimitDetails,
+  PensionLimitMember,
   EstimatedMemberDetails,
   InvestmentPerformanceDetails,
   ForgotPassword,
@@ -29,10 +32,12 @@ import {
   Folders,
   RegisterPinResult,
   PinLoginResult,
+  LoginResult,
+  DeviceInfo,
+  PracticeInfo,
   RevokePinResult,
   ClientProfile,
 } from "../navigation/types";
-import { Platform } from "react-native";
 import Constants from "expo-constants";
 import { Base64 } from "js-base64";
 import { Buffer } from "buffer";
@@ -73,33 +78,139 @@ export const signUpUser = async (
   }
 };
 
+// ---------------------------------------------------------------------------
+// /mobile-auth endpoints
+// ---------------------------------------------------------------------------
+
+// Values never written to the log, in requests or responses.
+const REDACTED_KEYS = new Set([
+  "password",
+  "pin",
+  "auth_token",
+  "device_token",
+  "deviceToken",
+  "pushToken",
+]);
+
+const redact = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(redact);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, v]) => [
+        key,
+        REDACTED_KEYS.has(key) && v != null ? "***" : redact(v),
+      ])
+    );
+  }
+  return value;
+};
+
+interface ApiReply {
+  status: number;
+  data: any | null;
+}
+
+// POSTs to a /mobile-auth endpoint. Reads the reply as text first, so a non-JSON reply
+// (e.g. an empty 401) still reports its status code. Logs only in development builds.
+const postMobileAuth = async (
+  path: string,
+  body?: object,
+  authToken?: string
+): Promise<ApiReply> => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
+  const response = await fetch(`${apiBaseUrl}/mobile-auth/${path}`, {
+    method: "POST",
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const text = await response.text();
+  let data: any = null;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    // Not JSON; callers treat a null body as a failure.
+  }
+
+  if (__DEV__) {
+    console.log(`[mobile-auth/${path}]`, {
+      request: redact(body ?? null),
+      status: response.status,
+      response: data !== null ? redact(data) : text.slice(0, 200),
+    });
+  }
+
+  return { status: response.status, data };
+};
+
+const parsePractice = (practice: any): PracticeInfo | null => {
+  if (!practice || practice.practice_id == null) return null;
+  return {
+    practiceId: practice.practice_id,
+    practiceBrand: practice.practice_brand ?? null,
+    practiceName: practice.practice_name ?? null,
+    logoUrl: practice.logo_url || null,
+    logoVersion: practice.logo_version != null ? String(practice.logo_version) : null,
+  };
+};
+
+const parseLogin = (data: any): LoginResponse => ({
+  authToken: data.auth_token,
+  accountId: data.account_id,
+  accountType: data.account_type,
+});
+
 export const loginUser = async (
   username: string,
-  password: string
-): Promise<LoginResponse | null> => {
+  password: string,
+  deviceInfo: DeviceInfo
+): Promise<LoginResult> => {
   try {
-    const response = await fetch(`${apiBaseUrl}/Auth/mobile/ios`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
+    const { status, data } = await postMobileAuth("login", {
+      username,
+      password,
+      deviceInfo,
     });
 
-    const data = await response.json();
-
-    if (data.success) {
+    if (data?.success === true) {
       return {
-        authToken: data.auth_token,
-        accountId: data.account_id,
-        accountType: data.account_type,
+        success: true,
+        login: parseLogin(data),
+        practice: parsePractice(data.practice),
       };
-    } else {
-      throw new Error(data.message);
     }
+
+    return {
+      success: false,
+      message: data?.message || `Unable to log in (error ${status}). Please try again.`,
+    };
   } catch (error) {
     console.error("Login failed:", error);
-    return null;
+    return {
+      success: false,
+      message: "Unable to log in. Please check your connection.",
+    };
+  }
+};
+
+// Called on every launch. Failures are ignored; the next launch tries again.
+export const registerDevice = async (deviceInfo: DeviceInfo): Promise<void> => {
+  try {
+    await postMobileAuth("register-device", deviceInfo);
+  } catch (error) {
+    console.warn("Device registration failed:", error);
+  }
+};
+
+// Called on logout. It only updates a status on the server, so failures (including a
+// 401 after auto-logout with an expired token) are ignored.
+export const logoutAllDevices = async (authToken: string): Promise<void> => {
+  try {
+    await postMobileAuth("logout-all-devices", undefined, authToken);
+  } catch (error) {
+    console.warn("Logout from all devices failed:", error);
   }
 };
 
@@ -128,33 +239,24 @@ export const requestPasswordReset = async (
 
 export const registerPin = async (
   authToken: string,
-  deviceId: string,
-  pin: string
+  pin: string,
+  deviceInfo: DeviceInfo
 ): Promise<RegisterPinResult> => {
   try {
-    const response = await fetch(`${apiBaseUrl}/Auth/mobile/pin/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
-      },
-      body: JSON.stringify({
-        deviceId,
-        pin,
-        platform: Platform.OS,
-        osVersion: String(Platform.Version),
-      }),
-    });
+    const { status, data } = await postMobileAuth(
+      "register-pin",
+      { pin, deviceInfo },
+      authToken
+    );
 
-    const data = await response.json();
-
-    if (data.success && data.device_token) {
+    if (data?.success === true && data.device_token) {
       return { success: true, deviceToken: data.device_token };
     }
 
     return {
       success: false,
-      message: data.message || "Unable to set up PIN. Please try again.",
+      message:
+        data?.message || `Unable to set up PIN (error ${status}). Please try again.`,
     };
   } catch (error) {
     console.error("PIN registration failed:", error);
@@ -166,43 +268,40 @@ export const registerPin = async (
 };
 
 export const loginWithPin = async (
-  deviceId: string,
   deviceToken: string,
-  pin: string
+  pin: string,
+  deviceInfo: DeviceInfo
 ): Promise<PinLoginResult> => {
   try {
-    const response = await fetch(`${apiBaseUrl}/Auth/mobile/pin/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        deviceId,
-        deviceToken,
-        pin,
-      }),
+    const { status, data } = await postMobileAuth("pin-login", {
+      pin,
+      deviceToken,
+      deviceInfo,
     });
 
-    const data = await response.json();
-
-    if (data.success) {
+    if (!data) {
       return {
-        status: "success",
-        login: {
-          authToken: data.auth_token,
-          accountId: data.account_id,
-          accountType: data.account_type,
-        },
-        newDeviceToken: data.device_token ?? null,
+        status: "error",
+        message: `Unable to log in (error ${status}). Please try again.`,
       };
     }
 
-    if (data.pin_disabled) {
+    if (data.success === true) {
+      return {
+        status: "success",
+        login: parseLogin(data),
+        newDeviceToken: data.device_token ?? null,
+        practice: parsePractice(data.practice),
+      };
+    }
+
+    if (data.pin_disabled === true) {
       return {
         status: "disabled",
         message:
           data.message ||
           "PIN login has been disabled on this device. Please log in with your password.",
+        code: data.pin_disabled_code ?? null,
       };
     }
 
@@ -225,24 +324,11 @@ export const revokePin = async (
   deviceId: string
 ): Promise<RevokePinResult> => {
   try {
-    const response = await fetch(`${apiBaseUrl}/Auth/mobile/pin/revoke`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
-      },
-      body: JSON.stringify({ deviceId }),
-    });
-
-    // Read as text first so a non-JSON reply (e.g. an empty 401) reports its status code.
-    const body = await response.text();
-
-    let data: any = null;
-    try {
-      data = JSON.parse(body);
-    } catch {
-      // Not JSON; treated as a failure below.
-    }
+    const { status, data } = await postMobileAuth(
+      "revoke-pin",
+      { deviceId },
+      authToken
+    );
 
     if (data?.success === true) {
       return { success: true };
@@ -252,7 +338,7 @@ export const revokePin = async (
       success: false,
       message:
         data?.message ||
-        `Couldn't turn off PIN login (error ${response.status}). Please try again.`,
+        `Couldn't turn off PIN login (error ${status}). Please try again.`,
     };
   } catch (error) {
     console.error("PIN revoke failed:", error);
@@ -603,6 +689,106 @@ export const getContributionCapSummary = async (
     return null;
   }
 };
+
+
+export const getFinancialYears = async (
+  authToken: string
+): Promise<FinancialYear[] | null> => {
+  try {
+    const response = await fetch(`${apiBaseUrl}/FinancialYear/All`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? (data as FinancialYear[]) : null;
+  } catch (error) {
+    console.error("Fetch failed:", error);
+    return null;
+  }
+};
+
+
+// "CCMaximum" -> "ccMaximum", "MemberName" -> "memberName". Leaves camelCase keys as-is.
+const camelKey = (key: string) => key.replace(/^[A-Z]+(?=[A-Z][a-z]|$)|^[A-Z]/, (m) => m.toLowerCase());
+
+const toCamelKeys = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(toCamelKeys);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [camelKey(k), toCamelKeys(v)])
+    );
+  }
+  return value;
+};
+
+export const getContributionCapDetailed = async (
+  authToken: string,
+  superFundId: string,
+  financialYearId: string
+): Promise<ContributionCapDetailed[] | null> => {
+  try {
+    const response = await fetch(
+      `${apiBaseUrl}/ContributionCap/Detailed/${superFundId}/${financialYearId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    return Array.isArray(data)
+      ? (data.map(toCamelKeys) as ContributionCapDetailed[])
+      : null;
+  } catch (error) {
+    console.error("Fetch failed:", error);
+    return null;
+  }
+};
+
+
+export const getPensionLimitMembers = async (
+  authToken: string,
+  superFundId: string,
+  financialYearId: string
+): Promise<PensionLimitMember[] | null> => {
+  try {
+    const response = await fetch(
+      `${apiBaseUrl}/PensionsContributions/PensionLimitMembers/${superFundId}/${financialYearId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    return Array.isArray(data)
+      ? (data.map(toCamelKeys) as PensionLimitMember[])
+      : null;
+  } catch (error) {
+    console.error("Fetch failed:", error);
+    return null;
+  }
+};
+
 
 export const getPensionLimitSummary = async (
   authToken: string,

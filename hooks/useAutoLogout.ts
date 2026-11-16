@@ -16,7 +16,7 @@ export const useAutoLogout = () => {
   const logout = () => {
     console.log("Auto-logout due to background inactivity");
     if (userData?.authToken) {
-      handleLogout(navigation, false, resetAuthState);
+      handleLogout(navigation, false, resetAuthState, userData.authToken);
     }
   };
 
